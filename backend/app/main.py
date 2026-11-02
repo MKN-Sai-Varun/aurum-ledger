@@ -3,6 +3,7 @@ from fastapi import FastAPI, Request
 from app.config import load_settings
 from app.routers.auth import router as auth_router
 from app.routers.karigars import router as karigars_router
+from app.routers.ledger import router as ledger_router
 
 settings = load_settings()
 
@@ -28,6 +29,7 @@ async def security_headers(request: Request, call_next):
 
 app.include_router(auth_router)
 app.include_router(karigars_router)
+app.include_router(ledger_router)
 
 
 @app.get("/api/health")
