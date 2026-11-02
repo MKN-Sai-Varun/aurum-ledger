@@ -1,16 +1,31 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 
 from app.config import load_settings
+from app.routers.auth import router as auth_router
 
 settings = load_settings()
 
 # API documentation pages are switched off in production.
 app = FastAPI(
-    title="Karigar Gold Ledger API",
+    title="Aurum API",
     docs_url=None if settings.is_production else "/docs",
     redoc_url=None,
     openapi_url=None if settings.is_production else "/openapi.json",
 )
+
+
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "no-referrer")
+    if request.url.path.startswith("/api/"):
+        response.headers.setdefault("Cache-Control", "no-store")
+    return response
+
+
+app.include_router(auth_router)
 
 
 @app.get("/api/health")

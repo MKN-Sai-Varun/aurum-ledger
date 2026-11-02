@@ -7,3 +7,4 @@ python-multipart
 pytest
 httpx
 argon2-cffi
+pyjwt
