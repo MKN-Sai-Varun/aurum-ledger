@@ -114,3 +114,53 @@ export interface ReversalResult {
   reverses_txn_no: string;
   change_g: string;
 }
+
+export interface AlertFigure {
+  label: string;
+  value: string;
+}
+
+export interface AlertItem {
+  id: string;
+  kind: string;
+  karigar_id: number;
+  karigar: string;
+  job_no: string | null;
+  title: string;
+  message: string;
+  figures: AlertFigure[];
+}
+
+export interface AlertsData {
+  drift_count: number;
+  review_count: number;
+  rules: string[];
+  alerts: AlertItem[];
+}
+
+export interface Holder {
+  karigar_id: number;
+  karigar: string;
+  balance_g: string;
+}
+
+export interface Statement {
+  as_of: string;
+  total_g: string;
+  vault_g: string;
+  karigars_g: string;
+  refiner_g: string;
+  consistent: boolean;
+  basis: string;
+  holders: Holder[];
+}
+
+export interface StockMove {
+  id: number;
+  entry_date: string;
+  kind: string;
+  label: string;
+  fine_weight_g: string;
+  note: string | null;
+  by: string;
+}

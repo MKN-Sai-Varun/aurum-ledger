@@ -41,6 +41,8 @@ export default function Layout({ children }: { children: ReactNode }) {
             {link("/karigars", "Karigars")}
             {link("/jobs", "Jobs")}
             {link("/ledger", "Ledger")}
+            {user.role === "finance_head" && link("/alerts", "Alerts")}
+            {user.role === "finance_head" && link("/stock", "Stock")}
             {user.role === "issue_clerk" && link("/issue", "Issue")}
           </nav>
           <div className="topbar-right">

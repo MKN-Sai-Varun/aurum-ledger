@@ -6,9 +6,11 @@ import Issue from "./pages/Issue";
 import Jobs from "./pages/Jobs";
 import Karigars from "./pages/Karigars";
 import Ledger from "./pages/Ledger";
+import Alerts from "./pages/Alerts";
+import Stock from "./pages/Stock";
 import Login from "./pages/Login";
 
-const KNOWN_ROUTES = ["/karigars", "/jobs", "/ledger", "/issue"];
+const KNOWN_ROUTES = ["/karigars", "/jobs", "/ledger", "/issue", "/alerts", "/stock"];
 
 function Notice({ text }: { text: string }) {
   return (
@@ -50,12 +52,17 @@ function Screen() {
   if (state.status === "anonymous") return <Login />;
 
   const isClerk = state.user.role === "issue_clerk";
+  const isFinance = state.user.role === "finance_head";
 
   return (
     <Layout>
       {route === "/karigars" && <Karigars />}
       {route === "/jobs" && <Jobs />}
       {route === "/ledger" && <Ledger />}
+      {route === "/alerts" &&
+        (isFinance ? <Alerts /> : <Notice text="Only the finance head can see alerts." />)}
+      {route === "/stock" &&
+        (isFinance ? <Stock /> : <Notice text="Only the finance head can see stock." />)}
       {route === "/issue" &&
         (isClerk ? <Issue /> : <Notice text="Only the issue clerk can record issues." />)}
       {!KNOWN_ROUTES.includes(route) && <Notice text="That page doesn't exist." />}
