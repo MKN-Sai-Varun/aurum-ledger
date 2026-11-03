@@ -1,80 +1,58 @@
-import { useCallback, useEffect, useState } from "react";
+import AuthProvider from "./auth/AuthProvider";
+import { useAuth } from "./auth/auth-context";
+import Layout from "./components/Layout";
+import { useRoute } from "./lib/useRoute";
+import Karigars from "./pages/Karigars";
+import Login from "./pages/Login";
 
-type Status = "loading" | "ok" | "error";
+function Screen() {
+  const { state, retry } = useAuth();
+  const route = useRoute();
 
-export default function App() {
-  const [status, setStatus] = useState<Status>("loading");
+  if (state.status === "loading") {
+    return (
+      <div className="boot" role="status">
+        <span className="sr-only">Loading</span>
+        <span className="boot-dot" aria-hidden="true" />
+      </div>
+    );
+  }
 
-  const check = useCallback(async (signal?: AbortSignal) => {
-    setStatus("loading");
-    try {
-      const response = await fetch("/api/health", { signal });
-      const body = await response.json();
-      setStatus(response.ok && body.status === "ok" ? "ok" : "error");
-    } catch (error) {
-      if ((error as Error).name !== "AbortError") setStatus("error");
-    }
-  }, []);
+  if (state.status === "error") {
+    return (
+      <div className="boot">
+        <section className="card boot-card">
+          <p className="status-line">{state.message}</p>
+          <button className="btn btn-primary" onClick={retry}>
+            Try again
+          </button>
+        </section>
+      </div>
+    );
+  }
 
-  useEffect(() => {
-    const controller = new AbortController();
-    void check(controller.signal);
-    return () => controller.abort();
-  }, [check]);
+  if (state.status === "anonymous") return <Login />;
 
   return (
-    <div className="shell">
-      <header className="topbar">
-        <div className="topbar-inner">
-          <span className="brand">Aurum</span>
-          <span aria-live="polite">
-            {status === "loading" && (
-              <span key="loading" className="chip chip-wait">Checking</span>
-            )}
-            {status === "ok" && (
-              <span key="ok" className="chip chip-ok">Connected</span>
-            )}
-            {status === "error" && (
-              <span key="error" className="chip chip-review">Offline</span>
-            )}
-          </span>
-        </div>
-      </header>
+    <Layout>
+      {route === "/karigars" ? (
+        <Karigars />
+      ) : (
+        <section className="card">
+          <p className="status-line">That page doesn't exist.</p>
+          <a className="btn btn-primary" href="#/karigars">
+            Go to karigars
+          </a>
+        </section>
+      )}
+    </Layout>
+  );
+}
 
-      <main className="page">
-        <div className="hero">
-          <div>
-            <p className="eyebrow">Aurum / 00 Status</p>
-            <h1 className="hero-title">
-              Every gram, <span className="accent highlight">accounted for</span>
-            </h1>
-            <p className="lede">
-              Gold issued, returned and still to be explained, for every karigar,
-              on any day.
-            </p>
-          </div>
-
-          <section className="card status-card" aria-live="polite">
-            <p className="eyebrow">Server</p>
-            {status === "loading" && (
-              <p key="loading" className="status-line swap">Checking the server...</p>
-            )}
-
-            {status === "ok" && (
-              <p key="ok" className="status-line swap">The ledger server is running.</p>
-            )}
-
-            {status === "error" && (
-              <div key="error" className="swap">
-                <p className="status-line">Can't reach the ledger server.</p>
-                <button className="btn btn-primary" onClick={() => void check()}>
-                  Try again
-                </button>
-              </div>
-            )}
-          </section>
-        </div>
-      </main>
-    </div>
+export default function App() {
+  return (
+    <AuthProvider>
+      <Screen />
+    </AuthProvider>
   );
 }
