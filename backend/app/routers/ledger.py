@@ -2,7 +2,7 @@ from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, Field, StrictInt, field_validator
-from sqlalchemy import Integer, cast, func, select
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -17,7 +17,7 @@ from app.domain.gold_math import (
     parse_purity_pct,
     parse_weight_g,
 )
-from app.ledger import karigar_balance_mg, today_ist
+from app.ledger import karigar_balance_mg, next_number, today_ist
 from app.models import (
     KIND_ISSUE,
     ROLE_ISSUE_CLERK,
@@ -103,11 +103,6 @@ def _slip(db: Session, entry: LedgerEntry) -> SlipOut:
     )
 
 
-def _next_number(db: Session, column, prefix: str, first: int) -> str:
-    highest = db.scalar(
-        select(func.max(cast(func.substr(column, len(prefix) + 1), Integer)))
-    )
-    return f"{prefix}{(highest or first - 1) + 1}"
 
 
 @router.post("/issues", response_model=SlipOut, status_code=201)
@@ -179,7 +174,7 @@ def create_issue(
     for _ in range(3):
         try:
             job = Job(
-                job_no=_next_number(db, Job.job_no, "JOB-", 1001),
+                job_no=next_number(db, Job.job_no, "JOB-", 1001),
                 karigar_id=karigar_id,
                 category_id=category_id,
                 status="OPEN",
@@ -189,7 +184,7 @@ def create_issue(
             db.add(job)
             db.flush()
             entry = LedgerEntry(
-                txn_no=_next_number(db, LedgerEntry.txn_no, "TX-", 30001),
+                txn_no=next_number(db, LedgerEntry.txn_no, "TX-", 30001),
                 entry_date=entry_date,
                 karigar_id=karigar_id,
                 job_id=job.id,
