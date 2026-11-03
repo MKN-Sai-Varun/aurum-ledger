@@ -965,3 +965,72 @@ select.input {
     border: 1px solid #000000;
   }
 }
+
+.grid-wide {
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+.tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--card);
+}
+
+.tab {
+  min-height: 40px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.tab[aria-pressed="true"] {
+  background: var(--emerald);
+  color: #ffffff;
+}
+
+.tab:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.job-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.job .karigar-meta {
+  margin: 2px 0 0;
+}
+
+.job .slip-rows {
+  margin-top: 12px;
+}
+
+.job-flag {
+  margin: 12px 0 0;
+}
+
+.job-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .grid > .job {
+    animation: rise 500ms var(--ease) both;
+    animation-delay: calc(var(--i, 0) * 70ms);
+  }
+}

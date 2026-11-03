@@ -3,8 +3,11 @@ import { useAuth } from "./auth/auth-context";
 import Layout from "./components/Layout";
 import { useRoute } from "./lib/useRoute";
 import Issue from "./pages/Issue";
+import Jobs from "./pages/Jobs";
 import Karigars from "./pages/Karigars";
 import Login from "./pages/Login";
+
+const KNOWN_ROUTES = ["/karigars", "/jobs", "/issue"];
 
 function Notice({ text }: { text: string }) {
   return (
@@ -50,11 +53,10 @@ function Screen() {
   return (
     <Layout>
       {route === "/karigars" && <Karigars />}
+      {route === "/jobs" && <Jobs />}
       {route === "/issue" &&
         (isClerk ? <Issue /> : <Notice text="Only the issue clerk can record issues." />)}
-      {route !== "/karigars" && route !== "/issue" && (
-        <Notice text="That page doesn't exist." />
-      )}
+      {!KNOWN_ROUTES.includes(route) && <Notice text="That page doesn't exist." />}
     </Layout>
   );
 }

@@ -46,3 +46,40 @@ export interface Slip {
   note: string | null;
   issued_by: string;
 }
+
+export interface Job {
+  job_no: string;
+  karigar_id: number;
+  karigar: string;
+  category: string;
+  status: "OPEN" | "CLOSED";
+  opened_on: string;
+  closed_on: string | null;
+  issued_fine_g: string;
+  returned_fine_g: string;
+  outstanding_g: string;
+  allowed_wastage_pct: string;
+  allowed_wastage_g: string;
+  unexplained_g: string | null;
+  review: boolean | null;
+}
+
+export interface ReceiptResult {
+  txn_no: string;
+  kind: string;
+  entry_date: string;
+  gross_weight_g: string;
+  purity_pct: string;
+  fine_weight_g: string;
+  huid: string | null;
+  note: string | null;
+  job: Job;
+}
+
+export const KIND_LABEL: Record<string, string> = {
+  ISSUE: "Issue",
+  RECEIPT_PIECE: "Finished piece",
+  RECEIPT_SCRAP: "Scrap",
+  RECEIPT_FILINGS: "Filings",
+  REVERSAL: "Reversal",
+};

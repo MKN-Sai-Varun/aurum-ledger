@@ -39,6 +39,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           <span className="brand">Aurum</span>
           <nav className="nav" aria-label="Main">
             {link("/karigars", "Karigars")}
+            {link("/jobs", "Jobs")}
             {user.role === "issue_clerk" && link("/issue", "Issue")}
           </nav>
           <div className="topbar-right">
