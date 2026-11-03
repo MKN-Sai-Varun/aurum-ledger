@@ -25,3 +25,7 @@ export const ROLE_LABEL: Record<Role, string> = {
   issue_clerk: "Issue clerk",
   finance_head: "Finance head",
 };
+export interface Category {
+  id: number;
+  name: string;
+}

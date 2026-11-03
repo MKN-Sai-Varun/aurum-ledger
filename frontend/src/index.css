@@ -693,3 +693,125 @@ a.btn {
     animation: grow 700ms var(--ease) 300ms both;
   }
 }
+
+.btn-danger {
+  background: var(--coral-ink);
+  border-color: var(--coral-ink);
+  color: #ffffff;
+}
+
+.banner-ok {
+  background: var(--emerald-soft);
+  color: var(--emerald-deep);
+}
+
+.toolbar-add {
+  margin-bottom: 12px;
+}
+
+.card-action {
+  width: 100%;
+  margin-top: 14px;
+}
+
+.karigar-inactive {
+  background: #faf8f3;
+}
+
+.karigar-inactive .karigar-name {
+  color: var(--ink-soft);
+}
+
+.dialog {
+  width: min(560px, calc(100% - 24px));
+  max-height: calc(100% - 24px);
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  color: var(--ink);
+}
+
+.dialog::backdrop {
+  background: rgba(20, 35, 31, 0.45);
+}
+
+.dialog-body {
+  padding: 20px;
+}
+
+.dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.dialog-head .card-title {
+  margin: 0;
+  font-size: 24px;
+}
+
+.manage-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.manage-section:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.manage-note {
+  margin: 0 0 12px;
+  font-size: 14px;
+}
+
+.section-title {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.inline .input {
+  flex: 1 1 160px;
+  width: auto;
+}
+
+.rate-edit {
+  margin-bottom: 12px;
+}
+
+.rate-edit label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.input-figure {
+  text-align: right;
+  flex: 0 1 110px;
+}
+
+.unit {
+  color: var(--ink-soft);
+}
+
+.field-hint {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--coral-ink);
+}
+
+.input[aria-invalid="true"] {
+  border-color: var(--coral);
+}

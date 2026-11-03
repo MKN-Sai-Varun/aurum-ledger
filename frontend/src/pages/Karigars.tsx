@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
+import { useAuth } from "../auth/auth-context";
+import AddKarigar from "../components/AddKarigar";
+import ManageKarigar from "../components/ManageKarigar";
 import { ApiError, api } from "../lib/api";
-import type { Karigar } from "../lib/types";
+import type { Category, Karigar } from "../lib/types";
 
 type Load =
   | { status: "loading" }
   | { status: "error"; message: string }
-  | { status: "ready"; rows: Karigar[] };
+  | { status: "ready"; rows: Karigar[]; categories: Category[] };
 
 const BAR_SCALE_PCT = 5;
 
@@ -26,17 +29,28 @@ function barWidth(pct: string): string {
   return `${Math.min(100, (value / BAR_SCALE_PCT) * 100)}%`;
 }
 
+function byName(a: Karigar, b: Karigar): number {
+  return a.name.localeCompare(b.name);
+}
+
 export default function Karigars() {
+  const { state } = useAuth();
+  const canEdit = state.status === "signed-in" && state.user.role === "finance_head";
+
   const [load, setLoad] = useState<Load>({ status: "loading" });
   const [attempt, setAttempt] = useState(0);
   const [query, setQuery] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [managingId, setManagingId] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    api
-      .get<Karigar[]>("/api/karigars")
-      .then((rows) => {
-        if (!cancelled) setLoad({ status: "ready", rows });
+    Promise.all([
+      api.get<Karigar[]>("/api/karigars"),
+      canEdit ? api.get<Category[]>("/api/categories") : Promise.resolve([] as Category[]),
+    ])
+      .then(([rows, categories]) => {
+        if (!cancelled) setLoad({ status: "ready", rows, categories });
       })
       .catch((e) => {
         if (!cancelled) {
@@ -49,16 +63,34 @@ export default function Karigars() {
     return () => {
       cancelled = true;
     };
-  }, [attempt]);
+  }, [attempt, canEdit]);
 
   function retry() {
     setLoad({ status: "loading" });
     setAttempt((n) => n + 1);
   }
 
+  function replaceRow(updated: Karigar) {
+    setLoad((prev) =>
+      prev.status === "ready"
+        ? { ...prev, rows: prev.rows.map((r) => (r.id === updated.id ? updated : r)) }
+        : prev,
+    );
+  }
+
+  function addRow(created: Karigar) {
+    setLoad((prev) =>
+      prev.status === "ready"
+        ? { ...prev, rows: [...prev.rows, created].sort(byName) }
+        : prev,
+    );
+  }
+
   const rows = load.status === "ready" ? load.rows : [];
+  const categories = load.status === "ready" ? load.categories : [];
   const activeCount = rows.filter((k) => k.is_active).length;
   const openJobs = rows.reduce((sum, k) => sum + k.open_jobs, 0);
+  const managing = managingId === null ? undefined : rows.find((k) => k.id === managingId);
 
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -75,6 +107,9 @@ export default function Karigars() {
         <p className="lede">
           The loss allowed per item category. It is applied to the fine gold issued.
         </p>
+        {load.status === "ready" && !canEdit && (
+          <p className="muted manage-note">Only the finance head can change these.</p>
+        )}
       </div>
 
       {load.status === "loading" && (
@@ -98,6 +133,11 @@ export default function Karigars() {
       {load.status === "ready" && rows.length === 0 && (
         <section className="card">
           <p className="status-line">No karigars yet.</p>
+          {canEdit && (
+            <button className="btn btn-primary" onClick={() => setAdding(true)}>
+              Add karigar
+            </button>
+          )}
         </section>
       )}
 
@@ -132,6 +172,11 @@ export default function Karigars() {
               Showing <span className="figure">{visible.length}</span> of{" "}
               <span className="figure">{rows.length}</span>
             </p>
+            {canEdit && (
+              <button className="btn btn-primary toolbar-add" onClick={() => setAdding(true)}>
+                Add karigar
+              </button>
+            )}
           </div>
 
           {visible.length === 0 ? (
@@ -145,7 +190,7 @@ export default function Karigars() {
             <div className="grid">
               {visible.map((k, index) => (
                 <article
-                  className="card karigar"
+                  className={`card karigar${k.is_active ? "" : " karigar-inactive"}`}
                   key={k.id}
                   style={{ "--i": index } as CSSProperties}
                 >
@@ -177,11 +222,41 @@ export default function Karigars() {
                       ))}
                     </dl>
                   )}
+                  {canEdit && (
+                    <button
+                      className="btn card-action"
+                      onClick={() => setManagingId(k.id)}
+                      aria-label={`Manage ${k.name}`}
+                    >
+                      Manage
+                    </button>
+                  )}
                 </article>
               ))}
             </div>
           )}
         </>
+      )}
+
+      {adding && (
+        <AddKarigar
+          onClose={() => setAdding(false)}
+          onCreated={(created) => {
+            addRow(created);
+            setAdding(false);
+            setManagingId(created.id);
+          }}
+        />
+      )}
+
+      {managing && (
+        <ManageKarigar
+          key={managing.id}
+          karigar={managing}
+          categories={categories}
+          onChanged={replaceRow}
+          onClose={() => setManagingId(null)}
+        />
       )}
     </div>
   );
