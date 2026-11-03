@@ -83,3 +83,34 @@ export const KIND_LABEL: Record<string, string> = {
   RECEIPT_FILINGS: "Filings",
   REVERSAL: "Reversal",
 };
+
+export interface LedgerRow {
+  txn_no: string;
+  entry_date: string;
+  job_no: string;
+  kind: string;
+  gross_weight_g: string;
+  purity_pct: string;
+  fine_weight_g: string;
+  change_g: string;
+  balance_g: string;
+  huid: string | null;
+  note: string | null;
+  reverses: string | null;
+  reversed_by: string | null;
+}
+
+export interface LedgerData {
+  karigar_id: number;
+  karigar: string;
+  opening_balance_g: string;
+  closing_balance_g: string;
+  entries: LedgerRow[];
+  truncated: boolean;
+}
+
+export interface ReversalResult {
+  txn_no: string;
+  reverses_txn_no: string;
+  change_g: string;
+}

@@ -1034,3 +1034,84 @@ select.input {
     animation-delay: calc(var(--i, 0) * 70ms);
   }
 }
+
+.ledger-filters {
+  align-items: flex-end;
+}
+
+.ledger-filters .field {
+  flex: 1 1 180px;
+  max-width: 260px;
+}
+
+.ledger-clear {
+  margin-bottom: 16px;
+}
+
+.stat-key {
+  border-left-color: var(--emerald);
+  background: var(--emerald-soft);
+}
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--card);
+}
+
+.table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 12px 14px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--line);
+}
+
+.table th {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  background: #faf8f3;
+  white-space: nowrap;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table .num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.cell-sub {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.cell-balance {
+  font-weight: 500;
+}
+
+.row-reversed td {
+  background: #faf8f3;
+  color: var(--ink-soft);
+}
+
+.btn-small {
+  min-height: 40px;
+  padding: 0 14px;
+}
+
+.field-count {
+  margin: 4px 0 0;
+  font-size: 13px;
+}

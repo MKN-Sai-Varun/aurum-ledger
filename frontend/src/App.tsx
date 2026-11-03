@@ -5,9 +5,10 @@ import { useRoute } from "./lib/useRoute";
 import Issue from "./pages/Issue";
 import Jobs from "./pages/Jobs";
 import Karigars from "./pages/Karigars";
+import Ledger from "./pages/Ledger";
 import Login from "./pages/Login";
 
-const KNOWN_ROUTES = ["/karigars", "/jobs", "/issue"];
+const KNOWN_ROUTES = ["/karigars", "/jobs", "/ledger", "/issue"];
 
 function Notice({ text }: { text: string }) {
   return (
@@ -54,6 +55,7 @@ function Screen() {
     <Layout>
       {route === "/karigars" && <Karigars />}
       {route === "/jobs" && <Jobs />}
+      {route === "/ledger" && <Ledger />}
       {route === "/issue" &&
         (isClerk ? <Issue /> : <Notice text="Only the issue clerk can record issues." />)}
       {!KNOWN_ROUTES.includes(route) && <Notice text="That page doesn't exist." />}
