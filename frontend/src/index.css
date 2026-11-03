@@ -815,3 +815,153 @@ a.btn {
 .input[aria-invalid="true"] {
   border-color: var(--coral);
 }
+
+.nav {
+  display: flex;
+  gap: 20px;
+}
+
+.nav-link {
+  border-bottom-color: transparent;
+}
+
+.nav-link-current {
+  border-bottom-color: var(--emerald);
+}
+
+.issue-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: clamp(16px, 3vw, 32px);
+  align-items: start;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0 16px;
+}
+
+select.input {
+  appearance: auto;
+}
+
+.preview {
+  position: sticky;
+  top: 88px;
+}
+
+.preview-line,
+.slip-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.preview-line dt,
+.slip-row dt {
+  color: var(--ink-soft);
+}
+
+.slip-row dd {
+  margin: 0;
+  text-align: right;
+}
+
+.preview-main {
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 500;
+  line-height: 1.1;
+}
+
+.slip-key {
+  background: var(--emerald-soft);
+  margin: 0 -12px;
+  padding-left: 12px;
+  padding-right: 12px;
+  border-radius: 8px;
+  border-bottom-color: transparent;
+}
+
+.slip-key dd {
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.slip {
+  max-width: 560px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-top: 6px solid var(--emerald);
+  border-radius: var(--radius-card);
+  background: var(--card);
+}
+
+.slip-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.slip-title {
+  font-size: 28px;
+  margin: 6px 0 0;
+}
+
+.slip-ref {
+  text-align: right;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+
+.slip-rows {
+  margin: 0;
+}
+
+.slip-foot {
+  margin-top: 16px;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+
+.slip-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+@media (max-width: 860px) {
+  .issue-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .preview {
+    position: static;
+  }
+}
+
+@media print {
+  .topbar,
+  .no-print,
+  .banner-page {
+    display: none !important;
+  }
+
+  html,
+  body {
+    background: #ffffff;
+  }
+
+  .page {
+    padding: 0;
+  }
+
+  .slip {
+    border: 1px solid #000000;
+  }
+}

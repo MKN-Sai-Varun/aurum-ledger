@@ -3,9 +3,11 @@ import type { ReactNode } from "react";
 import { useAuth } from "../auth/auth-context";
 import { ApiError } from "../lib/api";
 import { ROLE_LABEL } from "../lib/types";
+import { useRoute } from "../lib/useRoute";
 
 export default function Layout({ children }: { children: ReactNode }) {
   const { state, signOut } = useAuth();
+  const route = useRoute();
   const [error, setError] = useState<string | null>(null);
 
   if (state.status !== "signed-in") return null;
@@ -20,15 +22,24 @@ export default function Layout({ children }: { children: ReactNode }) {
     }
   }
 
+  const link = (path: string, label: string) => (
+    <a
+      className={`nav-link${route === path ? " nav-link-current" : ""}`}
+      href={`#${path}`}
+      aria-current={route === path ? "page" : undefined}
+    >
+      {label}
+    </a>
+  );
+
   return (
     <div className="shell">
       <header className="topbar">
         <div className="topbar-inner">
           <span className="brand">Aurum</span>
-          <nav aria-label="Main">
-            <a className="nav-link" href="#/karigars" aria-current="page">
-              Karigars
-            </a>
+          <nav className="nav" aria-label="Main">
+            {link("/karigars", "Karigars")}
+            {user.role === "issue_clerk" && link("/issue", "Issue")}
           </nav>
           <div className="topbar-right">
             <span className="user">{user.full_name}</span>

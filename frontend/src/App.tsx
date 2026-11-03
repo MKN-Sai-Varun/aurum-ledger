@@ -2,8 +2,20 @@ import AuthProvider from "./auth/AuthProvider";
 import { useAuth } from "./auth/auth-context";
 import Layout from "./components/Layout";
 import { useRoute } from "./lib/useRoute";
+import Issue from "./pages/Issue";
 import Karigars from "./pages/Karigars";
 import Login from "./pages/Login";
+
+function Notice({ text }: { text: string }) {
+  return (
+    <section className="card">
+      <p className="status-line">{text}</p>
+      <a className="btn btn-primary" href="#/karigars">
+        Go to karigars
+      </a>
+    </section>
+  );
+}
 
 function Screen() {
   const { state, retry } = useAuth();
@@ -33,17 +45,15 @@ function Screen() {
 
   if (state.status === "anonymous") return <Login />;
 
+  const isClerk = state.user.role === "issue_clerk";
+
   return (
     <Layout>
-      {route === "/karigars" ? (
-        <Karigars />
-      ) : (
-        <section className="card">
-          <p className="status-line">That page doesn't exist.</p>
-          <a className="btn btn-primary" href="#/karigars">
-            Go to karigars
-          </a>
-        </section>
+      {route === "/karigars" && <Karigars />}
+      {route === "/issue" &&
+        (isClerk ? <Issue /> : <Notice text="Only the issue clerk can record issues." />)}
+      {route !== "/karigars" && route !== "/issue" && (
+        <Notice text="That page doesn't exist." />
       )}
     </Layout>
   );
