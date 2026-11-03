@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 
 from app.config import load_settings
 from app.routers.auth import router as auth_router
+from app.routers.corrections import router as corrections_router
 from app.routers.jobs import router as jobs_router
 from app.routers.karigars import router as karigars_router
 from app.routers.ledger import router as ledger_router
@@ -32,6 +33,7 @@ app.include_router(auth_router)
 app.include_router(karigars_router)
 app.include_router(ledger_router)
 app.include_router(jobs_router)
+app.include_router(corrections_router)
 
 
 @app.get("/api/health")

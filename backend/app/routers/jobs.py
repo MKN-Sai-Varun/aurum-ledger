@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import case, func, select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 
 from app.audit import record
 from app.db import get_session
@@ -53,7 +53,12 @@ RECEIPT_KINDS = {
     "SCRAP": KIND_RECEIPT_SCRAP,
     "FILINGS": KIND_RECEIPT_FILINGS,
 }
-
+def _reversed_ids():
+    """Ids of ledger entries that have been reversed. Aliased to avoid auto-correlation."""
+    reversal = aliased(LedgerEntry)
+    return select(reversal.reverses_entry_id).where(
+        reversal.reverses_entry_id.is_not(None)
+    )
 
 class ReceiptIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -137,8 +142,17 @@ def _summaries(db: Session, jobs: list[Job]) -> dict[int, JobSummary]:
     rows = db.execute(
         select(
             LedgerEntry.job_id,
-            func.coalesce(
-                func.sum(case((LedgerEntry.kind == KIND_ISSUE, LedgerEntry.fine_mg), else_=0)),
+                        func.coalesce(
+                func.sum(
+                    case(
+                        (
+                            (LedgerEntry.kind == KIND_ISSUE)
+                            & LedgerEntry.id.not_in(_reversed_ids()),
+                            LedgerEntry.fine_mg,
+                        ),
+                        else_=0,
+                    )
+                ),
                 0,
             ),
             func.coalesce(func.sum(LedgerEntry.balance_delta_mg), 0),
@@ -319,7 +333,10 @@ def create_receipt(
         raise HTTPException(status_code=409, detail="This job is closed.")
 
     if body.huid is not None and db.scalar(
-        select(LedgerEntry.id).where(LedgerEntry.huid == body.huid)
+        select(LedgerEntry.id).where(
+            LedgerEntry.huid == body.huid,
+            LedgerEntry.id.not_in(_reversed_ids()),
+        )
     ):
         raise HTTPException(status_code=409, detail="That HUID is already recorded.")
 
