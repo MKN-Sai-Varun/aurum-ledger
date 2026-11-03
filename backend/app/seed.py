@@ -36,6 +36,10 @@ from app.models import (
     KarigarWastage,
     LedgerEntry,
     User,
+    STOCK_FROM_REFINER,
+    STOCK_OPENING,
+    STOCK_TO_REFINER,
+    StockEntry,
 )
 from app.security import hash_password
 
@@ -221,7 +225,16 @@ def seed_database(session: Session, clerk_password: str, finance_password: str) 
             balance_delta_mg=fine if row.kind == KIND_ISSUE else -fine,
             huid=huid, created_by=clerk.id,
         ))
-
+    session.add_all(
+        [
+            StockEntry(entry_date=date(2026, 7, 1), kind=STOCK_OPENING, fine_mg=2_500_000,
+                       note="Opening vault stock (sample figure)", created_by=finance.id),
+            StockEntry(entry_date=date(2026, 10, 15), kind=STOCK_TO_REFINER, fine_mg=150_000,
+                       note="Sent for refining (sample figure)", created_by=finance.id),
+            StockEntry(entry_date=date(2026, 10, 25), kind=STOCK_FROM_REFINER, fine_mg=40_000,
+                       note="Part returned from refining (sample figure)", created_by=finance.id),
+        ]
+    )
     session.add(AuditLog(user_id=None, action="seed.completed", entity="database",
                          detail=f"{len(rows)} ledger entries"))
     session.commit()

@@ -31,6 +31,9 @@ KIND_RECEIPT_PIECE = "RECEIPT_PIECE"
 KIND_RECEIPT_SCRAP = "RECEIPT_SCRAP"
 KIND_RECEIPT_FILINGS = "RECEIPT_FILINGS"
 KIND_REVERSAL = "REVERSAL"
+STOCK_OPENING = "OPENING"
+STOCK_TO_REFINER = "TO_REFINER"
+STOCK_FROM_REFINER = "FROM_REFINER"
 
 
 def _utcnow() -> datetime:
@@ -160,6 +163,27 @@ class AuditLog(Base):
     entity_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     detail: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
+class StockEntry(Base):
+    """Vault stock and refiner movements, in milligrams of fine gold. Append-only."""
+
+    __tablename__ = "stock_entries"
+    __table_args__ = (
+        CheckConstraint(
+            "kind IN ('OPENING', 'TO_REFINER', 'FROM_REFINER')", name="ck_stock_kind"
+        ),
+        CheckConstraint("fine_mg > 0", name="ck_stock_fine"),
+        Index("ix_stock_entry_date", "entry_date"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    entry_date: Mapped[date] = mapped_column(Date)
+    kind: Mapped[str] = mapped_column(String(20))
+    fine_mg: Mapped[int] = mapped_column(Integer)
+    note: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow
+    )
 
 def _make_append_only(table) -> None:
     """Reject UPDATE and DELETE on a table (SQLite triggers)."""
@@ -174,3 +198,4 @@ def _make_append_only(table) -> None:
 
 _make_append_only(LedgerEntry.__table__)
 _make_append_only(AuditLog.__table__)
+_make_append_only(StockEntry.__table__)
