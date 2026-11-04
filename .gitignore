@@ -18,3 +18,5 @@ dist/
 .DS_Store
 .vscode/
 .idea/
+
+backend/static/
