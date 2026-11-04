@@ -100,7 +100,6 @@ def test_an_unreadable_photo_is_still_a_normal_answer(client, engine):
 def test_no_readers_configured_still_works_manually(client):
     use(
         Fake("GEMINI", "1.000", available=False),
-        Fake("GROQ", "1.000", available=False),
         Fake("TESSERACT", "1.000", available=False),
     )
     sign_in(client, "clerk")
@@ -108,7 +107,6 @@ def test_no_readers_configured_still_works_manually(client):
     assert body["readable"] is False
     assert body["notes"] == [
         "The Gemini reader isn't set up.",
-        "The Groq reader isn't set up.",
         "The local reader isn't set up.",
         "Type the value from the display.",
     ]

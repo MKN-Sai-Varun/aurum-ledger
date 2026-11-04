@@ -3,12 +3,22 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
+from datetime import datetime
 
 from app.audit import record
 from app.db import get_session, settings
 from app.deps import require_roles
-from app.models import ROLE_ISSUE_CLERK, Reading, User
+from app.models import (
+    READING_ACCEPTED,
+    READING_CORRECTED,
+    READING_PENDING,
+    ROLE_FINANCE_HEAD,
+    ROLE_ISSUE_CLERK,
+    Reading,
+    User,
+)
 from app.ratelimit import LoginLimiter
 from app.readers.gemini import GeminiReader
 from app.readers.image import MAX_BYTES, prepare_image
@@ -90,4 +100,74 @@ def create_reading(
         value=outcome.value,
         readable=outcome.value is not None,
         notes=outcome.notes,
+    )
+
+class CorrectionOut(BaseModel):
+    txn_no: str | None
+    target: str
+    read_value: str | None
+    entered_value: str | None
+    reason: str | None
+    by: str
+    at: datetime | None
+
+
+class SummaryOut(BaseModel):
+    total: int
+    accepted: int
+    corrected: int
+    unused: int
+    unreadable: int
+    correction_rate_pct: str | None
+    by_source: dict[str, int]
+    recent_corrections: list[CorrectionOut]
+
+
+@router.get("/readings/summary", response_model=SummaryOut)
+def readings_summary(
+    db: Session = Depends(get_session),
+    _user: User = Depends(require_roles(ROLE_FINANCE_HEAD)),
+):
+    by_status = dict(db.execute(select(Reading.status, func.count()).group_by(Reading.status)).all())
+    by_source = dict(db.execute(select(Reading.source, func.count()).group_by(Reading.source)).all())
+    unreadable = db.scalar(
+        select(func.count()).select_from(Reading).where(Reading.value_text.is_(None))
+    )
+    accepted = by_status.get(READING_ACCEPTED, 0)
+    corrected = by_status.get(READING_CORRECTED, 0)
+    resolved = accepted + corrected
+
+    rate = None
+    if resolved:
+        tenths = (2 * corrected * 1000 + resolved) // (2 * resolved)
+        rate = f"{tenths // 10}.{tenths % 10}"
+
+    rows = db.execute(
+        select(Reading, User.full_name)
+        .join(User, User.id == Reading.user_id)
+        .where(Reading.status == READING_CORRECTED)
+        .order_by(Reading.resolved_at.desc(), Reading.id.desc())
+        .limit(10)
+    ).all()
+
+    return SummaryOut(
+        total=sum(by_status.values()),
+        accepted=accepted,
+        corrected=corrected,
+        unused=by_status.get(READING_PENDING, 0),
+        unreadable=unreadable,
+        correction_rate_pct=rate,
+        by_source=by_source,
+        recent_corrections=[
+            CorrectionOut(
+                txn_no=reading.txn_no,
+                target=reading.target,
+                read_value=reading.value_text,
+                entered_value=reading.confirmed_text,
+                reason=reading.override_reason,
+                by=name,
+                at=reading.resolved_at,
+            )
+            for reading, name in rows
+        ],
     )

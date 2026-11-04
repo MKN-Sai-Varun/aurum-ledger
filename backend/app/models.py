@@ -212,6 +212,7 @@ class Reading(Base):
     status: Mapped[str] = mapped_column(String(10), default=READING_PENDING)
     confirmed_text: Mapped[str | None] = mapped_column(String(12), nullable=True)
     override_reason: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    txn_no: Mapped[str | None] = mapped_column(String(20), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_utcnow
     )

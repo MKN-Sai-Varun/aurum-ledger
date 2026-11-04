@@ -24,6 +24,7 @@ from app.domain.gold_math import (
     parse_purity_pct,
     parse_weight_g,
 )
+from app.readings_check import ReadingFields, apply_readings, check_readings
 from app.domain.job_math import JobSummary, needs_review, summarise_job
 from app.ledger import next_number, today_ist
 from app.models import (
@@ -60,7 +61,7 @@ def _reversed_ids():
         reversal.reverses_entry_id.is_not(None)
     )
 
-class ReceiptIn(BaseModel):
+class ReceiptIn(ReadingFields):
     model_config = ConfigDict(extra="forbid")
     job_no: str = Field(min_length=1, max_length=20)
     kind: Literal["PIECE", "SCRAP", "FILINGS"]
@@ -377,6 +378,9 @@ def create_receipt(
     if rate is None:
         raise HTTPException(status_code=409, detail="This job has no issue entry.")
 
+    confirmations = check_readings(
+        db, user, body, format_weight_g(gross_mg), format_pct(purity)
+    )
     job_id, job_no, karigar_id, user_id = job.id, job.job_no, job.karigar_id, user.id
     kind = RECEIPT_KINDS[body.kind]
 
@@ -407,6 +411,7 @@ def create_receipt(
                 entry.id,
                 f"{entry.txn_no} {job_no} {body.kind} fine {format_weight_g(fine)} g",
             )
+            apply_readings(db, user_id, confirmations, entry.txn_no)
             db.commit()
             break
         except IntegrityError:

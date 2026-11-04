@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.audit import record
 from app.db import get_session
 from app.deps import current_user, require_roles
+from app.readings_check import ReadingFields, apply_readings, check_readings
 from app.domain.gold_math import (
     allowed_wastage_mg,
     fine_weight_mg,
@@ -37,7 +38,7 @@ WEIGHT_HELP = "Enter a weight in grams with up to 3 decimals."
 PURITY_HELP = "Enter a purity above 0 and up to 100, with up to 2 decimals."
 
 
-class IssueIn(BaseModel):
+class IssueIn(ReadingFields):
     model_config = ConfigDict(extra="forbid")
     karigar_id: StrictInt = Field(gt=0)
     category_id: StrictInt = Field(gt=0)
@@ -167,7 +168,9 @@ def create_issue(
                 "Ask the finance head to set it."
             ),
         )
-
+    confirmations = check_readings(
+        db, user, body, format_weight_g(gross_mg), format_pct(purity)
+    )
     user_id, karigar_id, category_id = user.id, karigar.id, category.id
     karigar_name = karigar.name
 
@@ -207,6 +210,7 @@ def create_issue(
                 entry.id,
                 f"{entry.txn_no} {job.job_no} {karigar_name} fine {format_weight_g(fine)} g",
             )
+            apply_readings(db, user_id, confirmations, entry.txn_no)
             db.commit()
             return _slip(db, entry)
         except IntegrityError:

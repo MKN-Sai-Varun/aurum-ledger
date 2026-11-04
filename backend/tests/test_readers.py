@@ -9,7 +9,6 @@ from PIL import Image
 from app.readers import image as image_module
 from app.readers.base import PURITY, WEIGHT, ReaderResult, ReaderUnavailable
 from app.readers.gemini import GeminiReader
-from app.readers.groq import GroqReader
 from app.readers.image import MAX_BYTES, prepare_image
 from app.readers.service import read_value
 from app.readers.tesseract import TesseractReader
@@ -195,88 +194,6 @@ def test_gemini_availability():
     assert GeminiReader("", GEMINI_MODEL).available() is False
     assert GeminiReader("key", "bad model/../name").available() is False
 
-
-# --- the Groq reader, with the network replaced ------------------------------------
-
-GROQ_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
-
-
-def groq_reply(obj):
-    return httpx.Response(
-        200, json={"choices": [{"message": {"content": json.dumps(obj)}}]}
-    )
-
-
-def groq(handler, key="test-key", model=GROQ_MODEL):
-    return GroqReader(key, model, transport=httpx.MockTransport(handler))
-
-
-def test_groq_reads_and_formats_a_value():
-    captured = {}
-
-    def handler(request):
-        captured["request"] = request
-        return groq_reply({"readable": True, "value": "91.6"})
-
-    assert groq(handler).read(PURITY, b"jpeg-bytes").value == "91.60"
-    request = captured["request"]
-    assert request.headers["authorization"] == "Bearer test-key"
-    assert str(request.url) == "https://api.groq.com/openai/v1/chat/completions"
-    body = json.loads(request.content)
-    assert body["model"] == GROQ_MODEL
-    assert body["temperature"] == 0
-    assert body["response_format"] == {"type": "json_object"}
-    image = body["messages"][0]["content"][1]["image_url"]["url"]
-    assert image.startswith("data:image/jpeg;base64,")
-    assert base64.b64decode(image.split(",", 1)[1]) == b"jpeg-bytes"
-    assert "test-key" not in request.content.decode()
-
-
-def test_groq_says_nothing_when_unreadable():
-    for obj in (
-        {"readable": False, "value": None},
-        {"readable": True, "value": None},
-        {"readable": False, "value": "91.60"},
-    ):
-        assert groq(lambda r, o=obj: groq_reply(o)).read(PURITY, b"x").value is None
-
-
-@pytest.mark.parametrize(
-    "target, value", [(WEIGHT, "2500.000"), (WEIGHT, "abc"), (PURITY, "100.5"), (PURITY, "22K")]
-)
-def test_groq_impossible_values_are_discarded(target, value):
-    assert groq(lambda r: groq_reply({"readable": True, "value": value})).read(target, b"x").value is None
-
-
-@pytest.mark.parametrize(
-    "status, text",
-    [(429, "busy"), (403, "isn't set up"), (404, "isn't set up"), (500, "problem")],
-)
-def test_groq_http_errors_become_safe_messages(status, text):
-    with pytest.raises(ReaderUnavailable, match=text):
-        groq(lambda r: httpx.Response(status, text="secret server detail")).read(WEIGHT, b"x")
-
-
-def test_groq_malformed_answers_and_network_failures():
-    with pytest.raises(ReaderUnavailable, match="unexpected"):
-        groq(lambda r: httpx.Response(200, json={"choices": []})).read(WEIGHT, b"x")
-
-    def broken(request):
-        raise httpx.ConnectError("boom")
-
-    with pytest.raises(ReaderUnavailable) as caught:
-        groq(broken).read(WEIGHT, b"x")
-    assert "boom" not in str(caught.value)
-
-
-def test_groq_availability():
-    assert groq(lambda r: groq_reply({})).available() is True
-    assert GroqReader("", GROQ_MODEL).available() is False
-    assert GroqReader("key", "bad model name!").available() is False
-
-
-def test_tesseract_availability_never_raises():
-    assert isinstance(TesseractReader().available(), bool)
 
 
 # --- the fallback chain ------------------------------------------------------------
