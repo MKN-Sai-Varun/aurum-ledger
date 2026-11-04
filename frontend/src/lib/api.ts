@@ -26,12 +26,14 @@ function messageFrom(data: unknown, status: number): string {
 }
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const isForm = typeof FormData !== "undefined" && body instanceof FormData;
   let response: Response;
   try {
     response = await fetch(path, {
       method,
-      headers: body === undefined ? undefined : { "Content-Type": "application/json" },
-      body: body === undefined ? undefined : JSON.stringify(body),
+      headers: body === undefined || isForm ? undefined : { "Content-Type": "application/json" },
+      body:
+        body === undefined ? undefined : isForm ? (body as FormData) : JSON.stringify(body),
       credentials: "same-origin",
     });
   } catch {
@@ -58,6 +60,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 export const api = {
   get: <T>(path: string) => request<T>("GET", path),
   post: <T>(path: string, body?: unknown) => request<T>("POST", path, body),
+  postForm: <T>(path: string, form: FormData) => request<T>("POST", path, form),
   put: <T>(path: string, body?: unknown) => request<T>("PUT", path, body),
   patch: <T>(path: string, body?: unknown) => request<T>("PATCH", path, body),
 };

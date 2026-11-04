@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { ApiError, api } from "../lib/api";
 import type { AlertsData } from "../lib/types";
+import ReadingsSummary from "../components/ReadingsSummary";
 
 type Load =
   | { status: "loading" }
@@ -88,7 +89,7 @@ export default function Alerts() {
               ))}
             </ul>
           </details>
-
+              <ReadingsSummary />
           {load.data.alerts.length === 0 ? (
             <section className="card">
               <p className="status-line">Nothing to review right now.</p>

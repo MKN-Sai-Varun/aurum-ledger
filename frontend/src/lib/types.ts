@@ -164,3 +164,24 @@ export interface StockMove {
   note: string | null;
   by: string;
 }
+
+export interface ReadingCorrection {
+  txn_no: string | null;
+  target: string;
+  read_value: string | null;
+  entered_value: string | null;
+  reason: string | null;
+  by: string;
+  at: string | null;
+}
+
+export interface ReadingsSummaryData {
+  total: number;
+  accepted: number;
+  corrected: number;
+  unused: number;
+  unreadable: number;
+  correction_rate_pct: string | null;
+  by_source: Record<string, number>;
+  recent_corrections: ReadingCorrection[];
+}

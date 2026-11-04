@@ -9,9 +9,12 @@ import {
   parsePurityH,
   parseWeightMg,
 } from "../lib/gold";
+import { checkReading, readingFields } from "../lib/readings";
+import type { ReadingAttach } from "../lib/readings";
 import { KIND_LABEL } from "../lib/types";
 import type { Job, ReceiptResult } from "../lib/types";
 import Dialog from "./Dialog";
+import PhotoReader, { ReadingSummary } from "./PhotoReader";
 
 type Kind = "PIECE" | "SCRAP" | "FILINGS";
 type Step = "form" | "review" | "done";
@@ -42,6 +45,12 @@ export default function ReceiptDialog({ job, onSaved, onClose }: Props) {
   const [huid, setHuid] = useState("");
   const [date, setDate] = useState(today);
   const [note, setNote] = useState("");
+
+  const [weightRead, setWeightRead] = useState<ReadingAttach | null>(null);
+  const [weightReason, setWeightReason] = useState("");
+  const [purityRead, setPurityRead] = useState<ReadingAttach | null>(null);
+  const [purityReason, setPurityReason] = useState("");
+
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<ReceiptResult | null>(null);
@@ -57,8 +66,20 @@ export default function ReceiptDialog({ job, onSaved, onClose }: Props) {
   const dateOk = /^\d{4}-\d{2}-\d{2}$/.test(date) && date >= minDate && date <= today;
   const withinOutstanding =
     fine !== null && outstandingMg !== null && fine <= outstandingMg;
+
+  const weightCheck = checkReading("WEIGHT", gross, weightRead, weightReason);
+  const purityCheck = checkReading("PURITY", purity, purityRead, purityReason);
+  const readingsOk = weightCheck !== "NEEDS_REASON" && purityCheck !== "NEEDS_REASON";
+
   const canReview =
-    grossOk && purityH !== null && fine !== null && fine > 0 && huidOk && dateOk && withinOutstanding;
+    grossOk &&
+    purityH !== null &&
+    fine !== null &&
+    fine > 0 &&
+    huidOk &&
+    dateOk &&
+    withinOutstanding &&
+    readingsOk;
   const remaining =
     fine !== null && outstandingMg !== null && fine <= outstandingMg
       ? outstandingMg - fine
@@ -111,6 +132,8 @@ export default function ReceiptDialog({ job, onSaved, onClose }: Props) {
         huid: kind === "PIECE" ? huidClean : null,
         entry_date: date,
         note: trimmedNote === "" ? null : trimmedNote,
+        ...readingFields("weight", weightRead, weightCheck, weightReason),
+        ...readingFields("purity", purityRead, purityCheck, purityReason),
       });
       setSaved(result);
       onSaved(result.job);
@@ -186,6 +209,34 @@ export default function ReceiptDialog({ job, onSaved, onClose }: Props) {
             </div>
           </div>
           {outstandingHint && <p className="field-hint">{outstandingHint}</p>}
+
+          <div className="photo-section">
+            <p className="photo-section-title">Photos (optional)</p>
+            <div className="photo-grid">
+              <PhotoReader
+                target="WEIGHT"
+                noun="weight"
+                unit="g"
+                typed={gross}
+                attach={weightRead}
+                reason={weightReason}
+                onAttach={setWeightRead}
+                onFill={setGross}
+                onReason={setWeightReason}
+              />
+              <PhotoReader
+                target="PURITY"
+                noun="purity"
+                unit="%"
+                typed={purity}
+                attach={purityRead}
+                reason={purityReason}
+                onAttach={setPurityRead}
+                onFill={setPurity}
+                onReason={setPurityReason}
+              />
+            </div>
+          </div>
 
           {kind === "PIECE" && (
             <div className="field">
@@ -299,6 +350,12 @@ export default function ReceiptDialog({ job, onSaved, onClose }: Props) {
               <dd className="figure">{formatG(remaining)} g</dd>
             </div>
           </dl>
+          <ReadingSummary
+            items={[
+              { noun: "weight", check: weightCheck },
+              { noun: "purity", check: purityCheck },
+            ]}
+          />
           <p className="muted manage-note">
             Saved entries can't be edited. The finance head corrects a mistake with a reversal.
           </p>

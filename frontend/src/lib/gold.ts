@@ -41,3 +41,8 @@ export function applyPct(mg: number, hundredths: number): number {
 export function formatG(mg: number): string {
   return `${Math.floor(mg / 1000)}.${String(mg % 1000).padStart(3, "0")}`;
 }
+
+/** Hundredths of a percent as text with 2 decimals, for example 9160 becomes "91.60". */
+export function formatPctH(hundredths: number): string {
+  return `${Math.floor(hundredths / 100)}.${String(hundredths % 100).padStart(2, "0")}`;
+}

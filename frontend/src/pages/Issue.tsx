@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import Dialog from "../components/Dialog";
+import PhotoReader, { ReadingSummary } from "../components/PhotoReader";
 import SlipView from "../components/SlipView";
 import { ApiError, api } from "../lib/api";
 import { addDays, showDate, todayIST } from "../lib/dates";
@@ -12,6 +13,8 @@ import {
   parsePurityH,
   parseWeightMg,
 } from "../lib/gold";
+import { checkReading, readingFields } from "../lib/readings";
+import type { ReadingAttach } from "../lib/readings";
 import type { Karigar, Slip } from "../lib/types";
 
 type Load =
@@ -32,6 +35,11 @@ export default function Issue() {
   const [purity, setPurity] = useState("");
   const [date, setDate] = useState(today);
   const [note, setNote] = useState("");
+
+  const [weightRead, setWeightRead] = useState<ReadingAttach | null>(null);
+  const [weightReason, setWeightReason] = useState("");
+  const [purityRead, setPurityRead] = useState<ReadingAttach | null>(null);
+  const [purityReason, setPurityReason] = useState("");
 
   const [reviewing, setReviewing] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -77,6 +85,11 @@ export default function Issue() {
 
   const grossOk = grossMg !== null && grossMg > 0 && grossMg <= MAX_ISSUE_MG;
   const dateOk = /^\d{4}-\d{2}-\d{2}$/.test(date) && date >= minDate && date <= today;
+
+  const weightCheck = checkReading("WEIGHT", gross, weightRead, weightReason);
+  const purityCheck = checkReading("PURITY", purity, purityRead, purityReason);
+  const readingsOk = weightCheck !== "NEEDS_REASON" && purityCheck !== "NEEDS_REASON";
+
   const canReview =
     karigar !== undefined &&
     rate !== undefined &&
@@ -84,7 +97,8 @@ export default function Issue() {
     purityH !== null &&
     fine !== null &&
     fine > 0 &&
-    dateOk;
+    dateOk &&
+    readingsOk;
 
   let grossHint: string | null = null;
   if (gross.trim() !== "") {
@@ -107,6 +121,10 @@ export default function Issue() {
     setPurity("");
     setDate(today);
     setNote("");
+    setWeightRead(null);
+    setWeightReason("");
+    setPurityRead(null);
+    setPurityReason("");
     setError(null);
   }
 
@@ -130,6 +148,8 @@ export default function Issue() {
         purity: purity.trim(),
         entry_date: date,
         note: trimmedNote === "" ? null : trimmedNote,
+        ...readingFields("weight", weightRead, weightCheck, weightReason),
+        ...readingFields("purity", purityRead, purityCheck, purityReason),
       });
       setSlip(result);
       setReviewing(false);
@@ -149,8 +169,8 @@ export default function Issue() {
           Issue gold to a <span className="accent">karigar</span>
         </h1>
         <p className="lede">
-          Enter the gross weight and purity. The fine gold is worked out for you
-          and checked again by the server.
+          Enter the gross weight and purity, or photograph the display and check what was
+          read. The fine gold is worked out for you and checked again by the server.
         </p>
       </div>
 
@@ -264,6 +284,38 @@ export default function Issue() {
               </div>
             </div>
 
+            <div className="photo-section">
+              <p className="photo-section-title">Photos (optional)</p>
+              <p className="muted manage-note">
+                A photo lets the system read the weight and purity. You always confirm the
+                result, and a value that differs from the photo needs a reason.
+              </p>
+              <div className="photo-grid">
+                <PhotoReader
+                  target="WEIGHT"
+                  noun="weight"
+                  unit="g"
+                  typed={gross}
+                  attach={weightRead}
+                  reason={weightReason}
+                  onAttach={setWeightRead}
+                  onFill={setGross}
+                  onReason={setWeightReason}
+                />
+                <PhotoReader
+                  target="PURITY"
+                  noun="purity"
+                  unit="%"
+                  typed={purity}
+                  attach={purityRead}
+                  reason={purityReason}
+                  onAttach={setPurityRead}
+                  onFill={setPurity}
+                  onReason={setPurityReason}
+                />
+              </div>
+            </div>
+
             <div className="form-row">
               <div className="field">
                 <label htmlFor="date">Date</label>
@@ -354,6 +406,12 @@ export default function Issue() {
               <dd className="figure">{formatG(allowed)} g</dd>
             </div>
           </dl>
+          <ReadingSummary
+            items={[
+              { noun: "weight", check: weightCheck },
+              { noun: "purity", check: purityCheck },
+            ]}
+          />
           <p className="muted manage-note">
             Saved entries can't be edited. A mistake is corrected with a reversal.
           </p>
