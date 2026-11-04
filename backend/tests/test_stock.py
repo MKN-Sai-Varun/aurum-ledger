@@ -34,10 +34,10 @@ def test_stock_endpoints_are_finance_only(client):
 def test_seeded_statement(client):
     sign_in(client, "finance")
     s = statement(client, as_of="2026-11-02")
-    assert s["total_g"] == "2500.000"
+    assert s["total_g"] == "2573.422"
     assert s["karigars_g"] == "210.908"
     assert s["refiner_g"] == "110.000"
-    assert s["vault_g"] == "2179.092"
+    assert s["vault_g"] == "2252.514"
     assert s["consistent"] is True
 
 
@@ -94,7 +94,7 @@ def test_sending_to_the_refiner(client, engine):
     assert body["entry"]["note"] == "Batch 7"
     assert body["entry"]["entry_date"] == today_ist().isoformat()
     assert body["statement"]["refiner_g"] == "210.000"
-    assert body["statement"]["vault_g"] == "2079.092"
+    assert body["statement"]["vault_g"] == "2152.514"
     with Session(engine) as session:
         actions = list(session.scalars(select(AuditLog.action)))
     assert "stock.sent_to_refiner" in actions
@@ -105,12 +105,12 @@ def test_receiving_everything_back(client):
     response = move(client, "RECEIVE", "110.000")
     assert response.status_code == 201
     assert response.json()["statement"]["refiner_g"] == "0.000"
-    assert response.json()["statement"]["vault_g"] == "2289.092"
+    assert response.json()["statement"]["vault_g"] == "2362.514"
 
 
 def test_cannot_send_more_than_the_vault_holds(client):
     sign_in(client, "finance")
-    response = move(client, "SEND", "2200.000")
+    response = move(client, "SEND", "2300.000")
     assert response.status_code == 422
     assert "vault" in response.json()["detail"]
 
@@ -166,7 +166,7 @@ def test_csv_export(client):
     assert 'filename="aurum-stock-2026-11-02.csv"' in response.headers["content-disposition"]
     lines = response.text.strip().split("\r\n")
     assert lines[0] == "Date,Particulars,Fine gold (g)"
-    assert "2026-11-02,Vault,2179.092" in lines
+    assert "2026-11-02,Vault,2252.514" in lines
     assert "2026-11-02,With karigar: Selvam K,10.716" in lines
     assert "2026-11-02,At refiner,110.000" in lines
-    assert lines[-1] == "2026-11-02,Total stock,2500.000"
+    assert lines[-1] == "2026-11-02,Total stock,2573.422"

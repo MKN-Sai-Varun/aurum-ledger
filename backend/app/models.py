@@ -219,6 +219,68 @@ class Reading(Base):
     resolved_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+PAY_CASH = "CASH"
+PAY_BANK = "BANK_TRANSFER"
+PAY_UPI = "UPI"
+PAY_CHEQUE = "CHEQUE"
+PAY_ADJUSTED = "ADJUSTED"
+
+
+class OldGoldPurchase(Base):
+    """Old gold bought from a customer. Weights are mg and money is paise. Append-only."""
+
+    __tablename__ = "old_gold_purchases"
+    __table_args__ = (
+        CheckConstraint("gross_mg > 0", name="ck_og_gross"),
+        CheckConstraint("deduction_mg >= 0 AND deduction_mg < gross_mg", name="ck_og_deduction"),
+        CheckConstraint("purity_hundredths BETWEEN 1 AND 10000", name="ck_og_purity"),
+        CheckConstraint("fine_mg > 0", name="ck_og_fine"),
+        CheckConstraint("rate_paise > 0", name="ck_og_rate"),
+        CheckConstraint("value_paise >= 0", name="ck_og_value"),
+        CheckConstraint(
+            "payment_mode IN ('CASH', 'BANK_TRANSFER', 'UPI', 'CHEQUE', 'ADJUSTED')",
+            name="ck_og_payment",
+        ),
+        CheckConstraint("pan IS NULL OR length(pan) = 10", name="ck_og_pan"),
+        Index("ix_og_date", "entry_date"),
+        Index("ix_og_bill", "bill_no"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    og_no: Mapped[str] = mapped_column(String(20), unique=True)
+    entry_date: Mapped[date] = mapped_column(Date)
+    bill_no: Mapped[str] = mapped_column(String(30))
+    customer_name: Mapped[str] = mapped_column(String(100))
+    gross_mg: Mapped[int] = mapped_column(Integer)
+    deduction_mg: Mapped[int] = mapped_column(Integer)
+    purity_hundredths: Mapped[int] = mapped_column(Integer)
+    fine_mg: Mapped[int] = mapped_column(Integer)
+    rate_paise: Mapped[int] = mapped_column(Integer)
+    value_paise: Mapped[int] = mapped_column(Integer)
+    payment_mode: Mapped[str] = mapped_column(String(20))
+    pan: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    note: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow
+    )
+
+
+class OldGoldVoid(Base):
+    """A purchase cancelled by the finance head. Append-only, dated, with a reason."""
+
+    __tablename__ = "old_gold_voids"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    purchase_id: Mapped[int] = mapped_column(
+        ForeignKey("old_gold_purchases.id"), unique=True
+    )
+    reason: Mapped[str] = mapped_column(String(150))
+    voided_on: Mapped[date] = mapped_column(Date)
+    voided_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow
+    )
 
 def _make_append_only(table) -> None:
     """Reject UPDATE and DELETE on a table (SQLite triggers)."""
@@ -234,3 +296,5 @@ def _make_append_only(table) -> None:
 _make_append_only(LedgerEntry.__table__)
 _make_append_only(AuditLog.__table__)
 _make_append_only(StockEntry.__table__)
+_make_append_only(OldGoldPurchase.__table__)
+_make_append_only(OldGoldVoid.__table__)

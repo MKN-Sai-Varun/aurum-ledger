@@ -23,6 +23,8 @@ from app.models import (
     LedgerEntry,
     StockEntry,
     User,
+    OldGoldPurchase,
+    OldGoldVoid,
 )
 
 router = APIRouter(prefix="/api/stock", tags=["stock"])
@@ -30,7 +32,10 @@ router = APIRouter(prefix="/api/stock", tags=["stock"])
 MAX_REFINER_MG = 5_000_000  # 5000.000 g, a typo guard
 BACKDATE_DAYS = 7
 WEIGHT_HELP = "Enter a weight in grams with up to 3 decimals."
-BASIS = "Vault is the total stock less the gold with karigars and at the refiner."
+BASIS = (
+    "Total stock is the opening stock plus old gold bought. "
+    "Vault is the total less the gold with karigars and at the refiner."
+)
 
 LABELS = {
     STOCK_OPENING: "Opening stock",
@@ -109,9 +114,21 @@ def _compute(db: Session, as_of: date) -> tuple[StockStatement, list]:
             .group_by(StockEntry.kind)
         ).all()
     )
+    bought = db.scalar(
+        select(func.coalesce(func.sum(OldGoldPurchase.fine_mg), 0)).where(
+            OldGoldPurchase.entry_date <= as_of
+        )
+    )
+    # A void counts from the day it was made, so earlier statements don't change.
+    voided = db.scalar(
+        select(func.coalesce(func.sum(OldGoldPurchase.fine_mg), 0))
+        .select_from(OldGoldPurchase)
+        .join(OldGoldVoid, OldGoldVoid.purchase_id == OldGoldPurchase.id)
+        .where(OldGoldVoid.voided_on <= as_of)
+    )
     holders = _holders(db, as_of)
     statement = compute_statement(
-        total_mg=sums.get(STOCK_OPENING, 0),
+        total_mg=sums.get(STOCK_OPENING, 0) + bought - voided,
         sent_mg=sums.get(STOCK_TO_REFINER, 0),
         received_mg=sums.get(STOCK_FROM_REFINER, 0),
         karigars_mg=sum(balance for _id, _name, balance in holders),

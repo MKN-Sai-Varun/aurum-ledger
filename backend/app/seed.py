@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from app.config import load_settings
 from app.db import Base, SessionLocal, engine
+from app.domain.old_gold_math import parse_rupees, value_paise
 from app.domain.gold_math import (
     fine_weight_mg,
     parse_purity_pct,
@@ -40,6 +41,9 @@ from app.models import (
     STOCK_OPENING,
     STOCK_TO_REFINER,
     StockEntry,
+    PAY_BANK,
+    PAY_CASH,
+    OldGoldPurchase,
 )
 from app.security import hash_password
 
@@ -55,6 +59,14 @@ KARIGAR_WASTAGE = {
     "Dhanapal V": {"Necklace": "3.00", "Earring": "4.00"},
 }
 
+OLD_GOLD = [
+    ("OG-5001", "EXB-2026-0412", date(2026, 10, 28), "Lakshmi R",
+     "25.000", "0.500", "84.50", "12500.00", PAY_BANK, "FGHIJ5678K"),
+    ("OG-5002", "EXB-2026-0419", date(2026, 10, 31), "Karim S",
+     "8.200", "0", "76.00", "12500.00", PAY_CASH, None),
+    ("OG-5003", "EXB-2026-0425", date(2026, 11, 2), "Priya M",
+     "52.000", "1.250", "91.60", "12500.00", PAY_CASH, "ABCDE1234F"),
+]
 
 @dataclass(frozen=True)
 class ReceiptSpec:
@@ -234,6 +246,19 @@ def seed_database(session: Session, clerk_password: str, finance_password: str) 
             StockEntry(entry_date=date(2026, 10, 25), kind=STOCK_FROM_REFINER, fine_mg=40_000,
                        note="Part returned from refining (sample figure)", created_by=finance.id),
         ]
+    )
+    for (og_no, bill, day, customer, gross_text, deduction_text,purity_text, rate_text, mode, pan) in OLD_GOLD:
+        gross_mg = parse_weight_g(gross_text)
+        deduction_mg = parse_weight_g(deduction_text)
+        purity = parse_purity_pct(purity_text)
+        fine = fine_weight_mg(gross_mg - deduction_mg, purity)
+        rate = parse_rupees(rate_text)
+        session.add(OldGoldPurchase(
+            og_no=og_no, entry_date=day, bill_no=bill, customer_name=customer,
+            gross_mg=gross_mg, deduction_mg=deduction_mg, purity_hundredths=purity,
+            fine_mg=fine, rate_paise=rate, value_paise=value_paise(fine, rate),
+            payment_mode=mode, pan=pan, note=None, created_by=clerk.id,
+        )
     )
     session.add(AuditLog(user_id=None, action="seed.completed", entity="database",
                          detail=f"{len(rows)} ledger entries"))
