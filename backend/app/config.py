@@ -12,6 +12,7 @@ load_dotenv()
 
 _MIN_SECRET_LENGTH = 32
 _DEV_FALLBACK_SECRET = "dev-only-secret-not-for-production-use"
+_DEFAULT_GEMINI_MODEL = "gemini-3.6-flash"
 
 
 @dataclass(frozen=True)
@@ -20,6 +21,7 @@ class Settings:
     database_url: str
     jwt_secret: str
     gemini_api_key: str
+    gemini_model: str
 
     @property
     def is_production(self) -> bool:
@@ -43,4 +45,5 @@ def load_settings() -> Settings:
         database_url=os.getenv("DATABASE_URL", "sqlite:///./gold_ledger.db"),
         jwt_secret=jwt_secret,
         gemini_api_key=os.getenv("GEMINI_API_KEY", "").strip(),
+        gemini_model=os.getenv("GEMINI_MODEL", "").strip() or _DEFAULT_GEMINI_MODEL,
     )

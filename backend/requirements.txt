@@ -8,3 +8,5 @@ pytest
 httpx
 argon2-cffi
 pyjwt
+pillow
+pytesseract

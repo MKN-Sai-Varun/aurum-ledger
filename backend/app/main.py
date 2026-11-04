@@ -8,6 +8,7 @@ from app.routers.jobs import router as jobs_router
 from app.routers.karigars import router as karigars_router
 from app.routers.ledger import router as ledger_router
 from app.routers.stock import router as stock_router
+from app.routers.readings import router as readings_router
 
 settings = load_settings()
 
@@ -38,6 +39,7 @@ app.include_router(jobs_router)
 app.include_router(corrections_router)
 app.include_router(alerts_router)
 app.include_router(stock_router)
+app.include_router(readings_router)
 
 
 @app.get("/api/health")

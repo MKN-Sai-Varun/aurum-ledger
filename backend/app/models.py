@@ -184,6 +184,40 @@ class StockEntry(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_utcnow
     )
+READING_PENDING = "PENDING"
+READING_ACCEPTED = "ACCEPTED"
+READING_CORRECTED = "CORRECTED"
+
+
+class Reading(Base):
+    """One attempt to read a value from a photo. The photo itself is never stored."""
+
+    __tablename__ = "readings"
+    __table_args__ = (
+        CheckConstraint("target IN ('WEIGHT', 'PURITY')", name="ck_reading_target"),
+        CheckConstraint(
+            "source IN ('GEMINI', 'GROQ', 'TESSERACT', 'NONE')", name="ck_reading_source"
+        ),
+        CheckConstraint(
+            "status IN ('PENDING', 'ACCEPTED', 'CORRECTED')", name="ck_reading_status"
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    target: Mapped[str] = mapped_column(String(10))
+    source: Mapped[str] = mapped_column(String(10))
+    value_text: Mapped[str | None] = mapped_column(String(12), nullable=True)
+    image_sha256: Mapped[str] = mapped_column(String(64))
+    status: Mapped[str] = mapped_column(String(10), default=READING_PENDING)
+    confirmed_text: Mapped[str | None] = mapped_column(String(12), nullable=True)
+    override_reason: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow
+    )
+    resolved_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
 def _make_append_only(table) -> None:
     """Reject UPDATE and DELETE on a table (SQLite triggers)."""
