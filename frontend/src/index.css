@@ -1315,3 +1315,23 @@ select.input {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+.chip-gold {
+  background: #fbe9cc;
+  color: #6b430a;
+}
+
+.table-wide {
+  min-width: 940px;
+}
+
+.flag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+@media print {
+  .no-print .table-wrap {
+    display: none;
+  }
+}

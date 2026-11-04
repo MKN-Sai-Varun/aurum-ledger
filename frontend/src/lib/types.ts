@@ -185,3 +185,26 @@ export interface ReadingsSummaryData {
   by_source: Record<string, number>;
   recent_corrections: ReadingCorrection[];
 }
+export interface OldGold {
+  og_no: string;
+  entry_date: string;
+  bill_no: string;
+  customer_name: string;
+  gross_weight_g: string;
+  deduction_g: string;
+  net_weight_g: string;
+  purity_pct: string;
+  fine_weight_g: string;
+  rate_per_g: string;
+  value: string;
+  payment_mode: string;
+  payment_label: string;
+  pan: string | null;
+  pan_masked: boolean;
+  high_value: boolean;
+  needs_review: boolean | null;
+  note: string | null;
+  recorded_by: string;
+  voided: boolean;
+  void_reason: string | null;
+}

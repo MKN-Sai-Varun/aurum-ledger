@@ -8,9 +8,10 @@ import Karigars from "./pages/Karigars";
 import Ledger from "./pages/Ledger";
 import Alerts from "./pages/Alerts";
 import Stock from "./pages/Stock";
+import OldGold from "./pages/OldGold";
 import Login from "./pages/Login";
 
-const KNOWN_ROUTES = ["/karigars", "/jobs", "/ledger", "/issue", "/alerts", "/stock"];
+const KNOWN_ROUTES = ["/karigars", "/jobs", "/ledger", "/oldgold", "/issue", "/alerts", "/stock"];
 
 function Notice({ text }: { text: string }) {
   return (
@@ -59,6 +60,7 @@ function Screen() {
       {route === "/karigars" && <Karigars />}
       {route === "/jobs" && <Jobs />}
       {route === "/ledger" && <Ledger />}
+      {route === "/oldgold" && <OldGold />}
       {route === "/alerts" &&
         (isFinance ? <Alerts /> : <Notice text="Only the finance head can see alerts." />)}
       {route === "/stock" &&
