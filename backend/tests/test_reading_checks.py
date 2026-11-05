@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta, timezone
 
-import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 

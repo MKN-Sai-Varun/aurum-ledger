@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 
 from app.audit import record
+from app.readers.base import Reader
 from app.db import get_session, settings
 from app.deps import require_roles
 from app.models import (
@@ -37,7 +38,7 @@ SOURCE_LABELS = {
 }
 
 
-def get_providers() -> list:
+def get_providers() -> list[Reader]:
     """Readers in the order they are tried. One that isn't set up is skipped."""
     return [
         GeminiReader(settings.gemini_api_key, settings.gemini_model),

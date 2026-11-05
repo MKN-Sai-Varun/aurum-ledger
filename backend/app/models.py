@@ -196,7 +196,7 @@ class Reading(Base):
     __table_args__ = (
         CheckConstraint("target IN ('WEIGHT', 'PURITY')", name="ck_reading_target"),
         CheckConstraint(
-            "source IN ('GEMINI', 'GROQ', 'TESSERACT', 'NONE')", name="ck_reading_source"
+            "source IN ('GEMINI', 'TESSERACT', 'NONE')", name="ck_reading_source"
         ),
         CheckConstraint(
             "status IN ('PENDING', 'ACCEPTED', 'CORRECTED')", name="ck_reading_status"
@@ -291,6 +291,8 @@ def _make_append_only(table) -> None:
             f"BEGIN SELECT RAISE(ABORT, '{table.name} is append-only'); END"
         ).execute_if(dialect="sqlite")
         event.listen(table, "after_create", ddl)
+
+
 
 
 _make_append_only(LedgerEntry.__table__)

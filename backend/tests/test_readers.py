@@ -11,7 +11,6 @@ from app.readers.base import PURITY, WEIGHT, ReaderResult, ReaderUnavailable
 from app.readers.gemini import GeminiReader
 from app.readers.image import MAX_BYTES, prepare_image
 from app.readers.service import read_value
-from app.readers.tesseract import TesseractReader
 from app.readers.values import clean_value, find_candidates
 
 
@@ -227,12 +226,12 @@ def test_a_failing_reader_falls_back_and_says_so():
     outcome = read_value(
         [
             Fake("GEMINI", fail="The Gemini reader is busy right now (free quota)."),
-            Fake("GROQ", "112.450"),
+            Fake("TESSERACT", "112.450"),
         ],
         WEIGHT,
         b"x",
     )
-    assert (outcome.source, outcome.value) == ("GROQ", "112.450")
+    assert (outcome.source, outcome.value) == ("TESSERACT", "112.450")
     assert outcome.notes == ["The Gemini reader is busy right now (free quota)."]
 
 

@@ -5,7 +5,6 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 
 from app.bootstrap import bootstrap
-from app.config import load_settings
 from app.routers.alerts import router as alerts_router
 from app.routers.auth import router as auth_router
 from app.routers.corrections import router as corrections_router
@@ -15,8 +14,7 @@ from app.routers.ledger import router as ledger_router
 from app.routers.readings import router as readings_router
 from app.routers.stock import router as stock_router
 from app.routers.old_gold import router as old_gold_router
-
-settings = load_settings()
+from app.db import settings
 
 # The built frontend, present only inside the container image.
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
