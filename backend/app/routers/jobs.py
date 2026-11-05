@@ -8,13 +8,14 @@ import re
 from datetime import date, timedelta
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import case, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, aliased
 
 from app.audit import record
+from app.idempotency import begin
 from app.db import get_session
 from app.deps import current_user, require_roles
 from app.domain.gold_math import (
@@ -218,6 +219,24 @@ def _get_job(db: Session, job_no: str) -> Job:
         raise HTTPException(status_code=404, detail="Job not found.")
     return job
 
+def _receipt_out(db: Session, entry: LedgerEntry) -> ReceiptOut:
+    job = db.get(Job, entry.job_id)
+    return ReceiptOut(
+        txn_no=entry.txn_no,
+        kind=entry.kind,
+        entry_date=entry.entry_date,
+        gross_weight_g=format_weight_g(entry.gross_mg),
+        purity_pct=format_pct(entry.purity_hundredths),
+        fine_weight_g=format_weight_g(entry.fine_mg),
+        huid=entry.huid,
+        note=entry.note,
+        job=_job_outs(db, [job], False)[0],
+    )
+
+
+def _receipt_by_txn(db: Session, txn_no: str) -> ReceiptOut:
+    entry = db.scalar(select(LedgerEntry).where(LedgerEntry.txn_no == txn_no))
+    return _receipt_out(db, entry)
 
 @router.get("/jobs", response_model=list[JobOut])
 def list_jobs(
@@ -295,7 +314,12 @@ def create_receipt(
     body: ReceiptIn,
     db: Session = Depends(get_session),
     user: User = Depends(require_roles(ROLE_ISSUE_CLERK)),
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
 ):
+    idem = begin(
+        db, user.id, idempotency_key, "RECEIPT", body.model_dump_json(),
+        lambda ref: _receipt_by_txn(db, ref),
+    )
     try:
         gross_mg = parse_weight_g(body.gross_weight)
     except (ValueError, TypeError):
@@ -412,22 +436,13 @@ def create_receipt(
                 f"{entry.txn_no} {job_no} {body.kind} fine {format_weight_g(fine)} g",
             )
             apply_readings(db, user_id, confirmations, entry.txn_no)
+            idem.remember(db, entry.txn_no)
             db.commit()
             break
         except IntegrityError:
             db.rollback()
+            idem.raise_if_stored(db)
     else:
         raise HTTPException(status_code=503, detail="Couldn't save the receipt. Try again.")
 
-    job = db.get(Job, job_id)
-    return ReceiptOut(
-        txn_no=entry.txn_no,
-        kind=entry.kind,
-        entry_date=entry.entry_date,
-        gross_weight_g=format_weight_g(gross_mg),
-        purity_pct=format_pct(purity),
-        fine_weight_g=format_weight_g(fine),
-        huid=entry.huid,
-        note=entry.note,
-        job=_job_outs(db, [job], False)[0],
-    )
+    return _receipt_out(db, entry)

@@ -292,6 +292,27 @@ def _make_append_only(table) -> None:
         ).execute_if(dialect="sqlite")
         event.listen(table, "after_create", ddl)
 
+class IdempotencyKey(Base):
+    """Remembers which entry a save created, so a retried save can't post twice."""
+
+    __tablename__ = "idempotency_keys"
+    __table_args__ = (
+        UniqueConstraint("user_id", "key", name="uq_idem_user_key"),
+        CheckConstraint(
+            "scope IN ('ISSUE', 'RECEIPT', 'OLD_GOLD')", name="ck_idem_scope"
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    key: Mapped[str] = mapped_column(String(64))
+    scope: Mapped[str] = mapped_column(String(12))
+    request_hash: Mapped[str] = mapped_column(String(64))
+    ref: Mapped[str] = mapped_column(String(30))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow
+    )
+
 
 
 
@@ -300,3 +321,4 @@ _make_append_only(AuditLog.__table__)
 _make_append_only(StockEntry.__table__)
 _make_append_only(OldGoldPurchase.__table__)
 _make_append_only(OldGoldVoid.__table__)
+_make_append_only(IdempotencyKey.__table__)

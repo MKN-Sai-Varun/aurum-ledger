@@ -3,6 +3,9 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
+
+from app.idempotency import Replay
 
 from app.bootstrap import bootstrap
 from app.routers.alerts import router as alerts_router
@@ -48,6 +51,11 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+@app.exception_handler(Replay)
+async def replay_handler(_request: Request, exc: Replay):
+    return JSONResponse(
+        exc.payload, status_code=201, headers={"Idempotent-Replay": "true"}
+    )
 
 @app.middleware("http")
 async def security_headers(request: Request, call_next):

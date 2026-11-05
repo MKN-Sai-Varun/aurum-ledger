@@ -2,13 +2,14 @@ import re
 from datetime import date, timedelta
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.audit import record
+from app.idempotency import begin
 from app.db import get_session
 from app.deps import current_user, require_roles
 from app.domain.gold_math import (
@@ -191,7 +192,12 @@ def create_purchase(
     body: OldGoldIn,
     db: Session = Depends(get_session),
     user: User = Depends(require_roles(ROLE_ISSUE_CLERK)),
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
 ):
+    idem = begin(
+        db, user.id, idempotency_key, "OLD_GOLD", body.model_dump_json(),
+        lambda ref: _out(db, _get(db, ref), ROLE_ISSUE_CLERK, None, show_full_pan=False),
+    )
     try:
         gross = parse_weight_g(body.gross_weight)
     except (ValueError, TypeError):
@@ -317,10 +323,12 @@ def create_purchase(
                 f"value Rs {format_rupees(value)} by {body.payment_mode}",
             )
             apply_readings(db, user_id, confirmations, purchase.og_no)
+            idem.remember(db, purchase.og_no)
             db.commit()
             break
         except IntegrityError:
             db.rollback()
+            idem.raise_if_stored(db)
     else:
         raise HTTPException(status_code=503, detail="Couldn't save the purchase. Try again.")
 

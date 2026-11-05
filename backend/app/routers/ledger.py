@@ -1,6 +1,6 @@
 from datetime import date, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, ConfigDict, Field, StrictInt, field_validator
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.audit import record
 from app.db import get_session
+from app.idempotency import begin
 from app.deps import current_user, require_roles
 from app.readings_check import ReadingFields, apply_readings, check_readings
 from app.domain.gold_math import (
@@ -103,7 +104,9 @@ def _slip(db: Session, entry: LedgerEntry) -> SlipOut:
         issued_by=issuer.full_name,
     )
 
-
+def _issue_by_txn(db: Session, txn_no: str) -> SlipOut:
+    entry = db.scalar(select(LedgerEntry).where(LedgerEntry.txn_no == txn_no))
+    return _slip(db, entry)
 
 
 @router.post("/issues", response_model=SlipOut, status_code=201)
@@ -111,7 +114,12 @@ def create_issue(
     body: IssueIn,
     db: Session = Depends(get_session),
     user: User = Depends(require_roles(ROLE_ISSUE_CLERK)),
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
 ):
+    idem = begin(
+        db, user.id, idempotency_key, "ISSUE", body.model_dump_json(),
+        lambda ref: _issue_by_txn(db, ref),
+    )
     try:
         gross_mg = parse_weight_g(body.gross_weight)
     except (ValueError, TypeError):
@@ -211,10 +219,12 @@ def create_issue(
                 f"{entry.txn_no} {job.job_no} {karigar_name} fine {format_weight_g(fine)} g",
             )
             apply_readings(db, user_id, confirmations, entry.txn_no)
+            idem.remember(db, entry.txn_no)
             db.commit()
             return _slip(db, entry)
         except IntegrityError:
             db.rollback()
+            idem.raise_if_stored(db)
     raise HTTPException(status_code=503, detail="Couldn't save the issue. Try again.")
 
 
