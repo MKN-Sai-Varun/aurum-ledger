@@ -3,8 +3,11 @@ import type { FormEvent } from "react";
 import Dialog from "../components/Dialog";
 import PhotoReader, { ReadingSummary } from "../components/PhotoReader";
 import SlipView from "../components/SlipView";
-import { ApiError, api } from "../lib/api";
-import { addDays, showDate, todayIST } from "../lib/dates";
+import { useAuth } from "../auth/auth-context";
+import { ApiError, api, saveErrorMessage } from "../lib/api";
+import { addDays, showDate, showTime, todayIST } from "../lib/dates";
+import { clearDraft, draftKey, loadDraft, useAutosave } from "../lib/drafts";
+import { keyFor, newNonce } from "../lib/idempotency";
 import {
   MAX_ISSUE_MG,
   applyPct,
@@ -22,6 +25,15 @@ type Load =
   | { status: "error"; message: string }
   | { status: "ready"; karigars: Karigar[] };
 
+interface IssueDraft {
+  karigarId: string;
+  categoryId: string;
+  gross: string;
+  purity: string;
+  date: string;
+  note: string;
+}
+
 export default function Issue() {
   const [load, setLoad] = useState<Load>({ status: "loading" });
   const [attempt, setAttempt] = useState(0);
@@ -29,12 +41,20 @@ export default function Issue() {
   const [today] = useState(todayIST);
   const minDate = addDays(today, -7);
 
-  const [karigarId, setKarigarId] = useState("");
-  const [categoryId, setCategoryId] = useState("");
-  const [gross, setGross] = useState("");
-  const [purity, setPurity] = useState("");
-  const [date, setDate] = useState(today);
-  const [note, setNote] = useState("");
+  const { state: auth } = useAuth();
+  const userId = auth.status === "signed-in" ? auth.user.id : 0;
+  const draftKeyName = draftKey(userId, "issue");
+  const [restored, setRestored] = useState(() => loadDraft<IssueDraft>(draftKeyName));
+  const saved = restored?.data;
+
+  const [karigarId, setKarigarId] = useState(saved?.karigarId ?? "");
+  const [categoryId, setCategoryId] = useState(saved?.categoryId ?? "");
+  const [gross, setGross] = useState(saved?.gross ?? "");
+  const [purity, setPurity] = useState(saved?.purity ?? "");
+  const [date, setDate] = useState(
+    saved && saved.date >= minDate && saved.date <= today ? saved.date : today,
+  );
+  const [note, setNote] = useState(saved?.note ?? "");
 
   const [weightRead, setWeightRead] = useState<ReadingAttach | null>(null);
   const [weightReason, setWeightReason] = useState("");
@@ -45,6 +65,14 @@ export default function Issue() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [slip, setSlip] = useState<Slip | null>(null);
+  const [nonce, setNonce] = useState(newNonce);
+
+  useAutosave(
+    draftKeyName,
+    { karigarId, categoryId, gross, purity, date, note },
+    slip === null,
+    ["date"],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -126,6 +154,9 @@ export default function Issue() {
     setPurityRead(null);
     setPurityReason("");
     setError(null);
+    clearDraft(draftKeyName);
+    setRestored(null);
+    setNonce(newNonce());
   }
 
   function openReview(event: FormEvent<HTMLFormElement>) {
@@ -141,7 +172,7 @@ export default function Issue() {
     setError(null);
     try {
       const trimmedNote = note.trim();
-      const result = await api.post<Slip>("/api/issues", {
+      const payload = {
         karigar_id: karigar.id,
         category_id: rate.category_id,
         gross_weight: gross.trim(),
@@ -150,12 +181,15 @@ export default function Issue() {
         note: trimmedNote === "" ? null : trimmedNote,
         ...readingFields("weight", weightRead, weightCheck, weightReason),
         ...readingFields("purity", purityRead, purityCheck, purityReason),
+      };
+      const result = await api.post<Slip>("/api/issues", payload, {
+        "Idempotency-Key": keyFor(nonce, payload),
       });
       setSlip(result);
       setReviewing(false);
       resetForm();
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Something went wrong. Try again.");
+      setError(saveErrorMessage(e));
     } finally {
       setBusy(false);
     }
@@ -203,6 +237,17 @@ export default function Issue() {
       {load.status === "ready" && !slip && karigars.length > 0 && (
         <div className="issue-grid">
           <form className="card" onSubmit={openReview} noValidate>
+            {restored && (
+              <p className="banner banner-ok draft-banner" role="status">
+                <span>
+                  Draft restored from {showTime(restored.savedAt)}. Photos aren't kept, so add
+                  them again if you need them.
+                </span>
+                <button type="button" className="btn btn-small" onClick={resetForm}>
+                  Discard draft
+                </button>
+              </p>
+            )}
             <div className="form-row">
               <div className="field">
                 <label htmlFor="karigar">Karigar</label>

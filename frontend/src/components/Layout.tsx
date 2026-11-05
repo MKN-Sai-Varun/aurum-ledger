@@ -4,6 +4,8 @@ import { useAuth } from "../auth/auth-context";
 import { ApiError } from "../lib/api";
 import { ROLE_LABEL } from "../lib/types";
 import { useRoute } from "../lib/useRoute";
+import { clearAllDrafts } from "../lib/drafts";
+import OnlineBanner from "./OnlineBanner";
 
 export default function Layout({ children }: { children: ReactNode }) {
   const { state, signOut } = useAuth();
@@ -17,6 +19,7 @@ export default function Layout({ children }: { children: ReactNode }) {
     setError(null);
     try {
       await signOut();
+      clearAllDrafts();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Couldn't sign out. Try again.");
     }
@@ -55,6 +58,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           </div>
         </div>
       </header>
+      <OnlineBanner />
       {error && (
         <p className="banner banner-page" role="alert">
           {error}

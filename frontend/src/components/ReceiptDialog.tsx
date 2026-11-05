@@ -1,7 +1,10 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { ApiError, api } from "../lib/api";
-import { addDays, showDate, todayIST } from "../lib/dates";
+import { useAuth } from "../auth/auth-context";
+import { api, saveErrorMessage } from "../lib/api";
+import { addDays, showDate, showTime, todayIST } from "../lib/dates";
+import { clearDraft, draftKey, loadDraft, useAutosave } from "../lib/drafts";
+import { keyFor, newNonce } from "../lib/idempotency";
 import {
   MAX_ISSUE_MG,
   applyPct,
@@ -27,6 +30,15 @@ const KIND_CHOICES: { value: Kind; label: string }[] = [
 
 const HUID_RE = /^[A-Z0-9]{6,12}$/;
 
+interface ReceiptDraft {
+  kind: string;
+  gross: string;
+  purity: string;
+  huid: string;
+  date: string;
+  note: string;
+}
+
 interface Props {
   job: Job;
   onSaved: (job: Job) => void;
@@ -38,13 +50,23 @@ export default function ReceiptDialog({ job, onSaved, onClose }: Props) {
   const lastWeek = addDays(today, -7);
   const minDate = job.opened_on > lastWeek ? job.opened_on : lastWeek;
 
+  const { state: auth } = useAuth();
+  const userId = auth.status === "signed-in" ? auth.user.id : 0;
+  const draftKeyName = draftKey(userId, `receipt-${job.job_no}`);
+  const [restored, setRestored] = useState(() => loadDraft<ReceiptDraft>(draftKeyName));
+  const draft = restored?.data;
+
   const [step, setStep] = useState<Step>("form");
-  const [kind, setKind] = useState<Kind>("PIECE");
-  const [gross, setGross] = useState("");
-  const [purity, setPurity] = useState("");
-  const [huid, setHuid] = useState("");
-  const [date, setDate] = useState(today);
-  const [note, setNote] = useState("");
+  const [kind, setKind] = useState<Kind>(
+    draft && KIND_CHOICES.some((c) => c.value === draft.kind) ? (draft.kind as Kind) : "PIECE",
+  );
+  const [gross, setGross] = useState(draft?.gross ?? "");
+  const [purity, setPurity] = useState(draft?.purity ?? "");
+  const [huid, setHuid] = useState(draft?.huid ?? "");
+  const [date, setDate] = useState(
+    draft && draft.date >= minDate && draft.date <= today ? draft.date : today,
+  );
+  const [note, setNote] = useState(draft?.note ?? "");
 
   const [weightRead, setWeightRead] = useState<ReadingAttach | null>(null);
   const [weightReason, setWeightReason] = useState("");
@@ -53,7 +75,30 @@ export default function ReceiptDialog({ job, onSaved, onClose }: Props) {
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState<ReceiptResult | null>(null);
+    const [saved, setSaved] = useState<ReceiptResult | null>(null);
+  const [nonce] = useState(newNonce);
+
+  useAutosave(
+    draftKeyName,
+    { kind, gross, purity, huid, date, note },
+    saved === null,
+    ["date", "kind"],
+  );
+
+  function discardDraft() {
+    clearDraft(draftKeyName);
+    setRestored(null);
+    setKind("PIECE");
+    setGross("");
+    setPurity("");
+    setHuid("");
+    setDate(today);
+    setNote("");
+    setWeightRead(null);
+    setWeightReason("");
+    setPurityRead(null);
+    setPurityReason("");
+  }
 
   const grossMg = parseWeightMg(gross);
   const purityH = parsePurityH(purity);
@@ -124,7 +169,7 @@ export default function ReceiptDialog({ job, onSaved, onClose }: Props) {
     setError(null);
     try {
       const trimmedNote = note.trim();
-      const result = await api.post<ReceiptResult>("/api/receipts", {
+      const payload = {
         job_no: job.job_no,
         kind,
         gross_weight: gross.trim(),
@@ -134,12 +179,16 @@ export default function ReceiptDialog({ job, onSaved, onClose }: Props) {
         note: trimmedNote === "" ? null : trimmedNote,
         ...readingFields("weight", weightRead, weightCheck, weightReason),
         ...readingFields("purity", purityRead, purityCheck, purityReason),
+      };
+      const result = await api.post<ReceiptResult>("/api/receipts", payload, {
+        "Idempotency-Key": keyFor(nonce, payload),
       });
       setSaved(result);
       onSaved(result.job);
+      clearDraft(draftKeyName);
       setStep("done");
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Something went wrong. Try again.");
+      setError(saveErrorMessage(e));
     } finally {
       setBusy(false);
     }
@@ -158,6 +207,17 @@ export default function ReceiptDialog({ job, onSaved, onClose }: Props) {
 
       {step === "form" && (
         <form onSubmit={openReview} noValidate>
+          {restored && (
+            <p className="banner banner-ok draft-banner" role="status">
+              <span>
+                Draft restored from {showTime(restored.savedAt)}. Photos aren't kept, so add
+                them again if you need them.
+              </span>
+              <button type="button" className="btn btn-small" onClick={discardDraft}>
+                Discard draft
+              </button>
+            </p>
+          )}
           <div className="field">
             <label htmlFor="r-kind">What was returned</label>
             <select

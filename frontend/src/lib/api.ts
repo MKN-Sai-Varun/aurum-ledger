@@ -25,13 +25,21 @@ function messageFrom(data: unknown, status: number): string {
     : "The request couldn't be completed.";
 }
 
-async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+async function request<T>(
+  method: string,
+  path: string,
+  body?: unknown,
+  extraHeaders?: Record<string, string>,
+): Promise<T> {
   const isForm = typeof FormData !== "undefined" && body instanceof FormData;
+  const headers: Record<string, string> = { ...extraHeaders };
+  if (body !== undefined && !isForm) headers["Content-Type"] = "application/json";
+
   let response: Response;
   try {
     response = await fetch(path, {
       method,
-      headers: body === undefined || isForm ? undefined : { "Content-Type": "application/json" },
+      headers: Object.keys(headers).length > 0 ? headers : undefined,
       body:
         body === undefined ? undefined : isForm ? (body as FormData) : JSON.stringify(body),
       credentials: "same-origin",
@@ -59,8 +67,20 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 
 export const api = {
   get: <T>(path: string) => request<T>("GET", path),
-  post: <T>(path: string, body?: unknown) => request<T>("POST", path, body),
+  post: <T>(path: string, body?: unknown, headers?: Record<string, string>) =>
+    request<T>("POST", path, body, headers),
   postForm: <T>(path: string, form: FormData) => request<T>("POST", path, form),
   put: <T>(path: string, body?: unknown) => request<T>("PUT", path, body),
   patch: <T>(path: string, body?: unknown) => request<T>("PATCH", path, body),
 };
+
+/** The message for a failed save. If the outcome is unknown, say so. */
+export function saveErrorMessage(error: unknown): string {
+  if (error instanceof ApiError) {
+    const unknown = error.status === 0 || error.status === 502 || error.status === 504;
+    return unknown
+      ? `${error.message} The entry may already have been saved. Press Save again to retry safely, or check the ledger before changing anything.`
+      : error.message;
+  }
+  return "Something went wrong. Try again.";
+}

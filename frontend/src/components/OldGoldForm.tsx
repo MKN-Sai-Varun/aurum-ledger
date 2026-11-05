@@ -1,7 +1,10 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { ApiError, api } from "../lib/api";
-import { addDays, showDate, todayIST } from "../lib/dates";
+import { useAuth } from "../auth/auth-context";
+import { api, saveErrorMessage } from "../lib/api";
+import { addDays, showDate, showTime, todayIST } from "../lib/dates";
+import { clearDraft, draftKey, loadDraft, useAutosave } from "../lib/drafts";
+import { keyFor, newNonce } from "../lib/idempotency";
 import { MAX_ISSUE_MG, applyPct, formatG, parsePurityH, parseWeightMg } from "../lib/gold";
 import {
   BILL_RE,
@@ -28,20 +31,41 @@ const MODES = [
   { value: "ADJUSTED", label: "Adjusted against the new bill" },
 ];
 
+interface OldGoldDraft {
+  bill: string;
+  deduction: string;
+  gross: string;
+  purity: string;
+  rate: string;
+  mode: string;
+  date: string;
+  note: string;
+}
+
 export default function OldGoldForm({ onSaved }: { onSaved: () => void }) {
   const [today] = useState(todayIST);
   const minDate = addDays(today, -7);
 
-  const [bill, setBill] = useState("");
+    const { state: auth } = useAuth();
+  const userId = auth.status === "signed-in" ? auth.user.id : 0;
+  const draftKeyName = draftKey(userId, "old-gold");
+  const [restored, setRestored] = useState(() => loadDraft<OldGoldDraft>(draftKeyName));
+  const draft = restored?.data;
+
+  const [bill, setBill] = useState(draft?.bill ?? "");
   const [customer, setCustomer] = useState("");
-  const [gross, setGross] = useState("");
-  const [deduction, setDeduction] = useState("");
-  const [purity, setPurity] = useState("");
-  const [rate, setRate] = useState("");
-  const [mode, setMode] = useState("");
+  const [gross, setGross] = useState(draft?.gross ?? "");
+  const [deduction, setDeduction] = useState(draft?.deduction ?? "");
+  const [purity, setPurity] = useState(draft?.purity ?? "");
+  const [rate, setRate] = useState(draft?.rate ?? "");
+  const [mode, setMode] = useState(
+    draft && MODES.some((m) => m.value === draft.mode) ? draft.mode : "",
+  );
   const [pan, setPan] = useState("");
-  const [date, setDate] = useState(today);
-  const [note, setNote] = useState("");
+  const [date, setDate] = useState(
+    draft && draft.date >= minDate && draft.date <= today ? draft.date : today,
+  );
+  const [note, setNote] = useState(draft?.note ?? "");
 
   const [weightRead, setWeightRead] = useState<ReadingAttach | null>(null);
   const [weightReason, setWeightReason] = useState("");
@@ -52,6 +76,14 @@ export default function OldGoldForm({ onSaved }: { onSaved: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<OldGold | null>(null);
+  const [nonce, setNonce] = useState(newNonce);
+
+  useAutosave(
+    draftKeyName,
+    { bill, deduction, gross, purity, rate, mode, date, note },
+    done === null,
+    ["date"],
+  );
 
   const billClean = bill.trim().toUpperCase();
   const nameClean = tidyName(customer);
@@ -133,7 +165,7 @@ export default function OldGoldForm({ onSaved }: { onSaved: () => void }) {
 
   const modeLabel = MODES.find((m) => m.value === mode)?.label ?? "";
 
-  function reset() {
+    function reset() {
     setBill("");
     setCustomer("");
     setGross("");
@@ -149,6 +181,9 @@ export default function OldGoldForm({ onSaved }: { onSaved: () => void }) {
     setPurityRead(null);
     setPurityReason("");
     setError(null);
+    clearDraft(draftKeyName);
+    setRestored(null);
+    setNonce(newNonce());
   }
 
   function openReview(event: FormEvent<HTMLFormElement>) {
@@ -164,7 +199,7 @@ export default function OldGoldForm({ onSaved }: { onSaved: () => void }) {
     setError(null);
     try {
       const trimmedNote = note.trim();
-      const result = await api.post<OldGold>("/api/old-gold", {
+      const payload = {
         bill_no: billClean,
         customer_name: nameClean,
         gross_weight: gross.trim(),
@@ -177,13 +212,16 @@ export default function OldGoldForm({ onSaved }: { onSaved: () => void }) {
         note: trimmedNote === "" ? null : trimmedNote,
         ...readingFields("weight", weightRead, weightCheck, weightReason),
         ...readingFields("purity", purityRead, purityCheck, purityReason),
+      };
+      const result = await api.post<OldGold>("/api/old-gold", payload, {
+        "Idempotency-Key": keyFor(nonce, payload),
       });
       setDone(result);
       setReviewing(false);
       reset();
       onSaved();
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Something went wrong. Try again.");
+      setError(saveErrorMessage(e));
     } finally {
       setBusy(false);
     }
@@ -194,6 +232,17 @@ export default function OldGoldForm({ onSaved }: { onSaved: () => void }) {
   return (
     <div className="issue-grid">
       <form className="card" onSubmit={openReview} noValidate>
+        {restored && (
+          <p className="banner banner-ok draft-banner" role="status">
+            <span>
+              Draft restored from {showTime(restored.savedAt)}. The customer name, PAN and photos
+              aren't kept on this device, so enter them again.
+            </span>
+            <button type="button" className="btn btn-small" onClick={reset}>
+              Discard draft
+            </button>
+          </p>
+        )}
         <div className="form-row">
           <div className="field">
             <label htmlFor="og-bill">Exchange bill reference</label>
