@@ -44,6 +44,7 @@ from app.models import (
     PAY_BANK,
     PAY_CASH,
     OldGoldPurchase,
+    ROLE_KARIGAR,
 )
 from app.security import hash_password
 
@@ -184,7 +185,12 @@ def _build_rows() -> list:
     return rows
 
 
-def seed_database(session: Session, clerk_password: str, finance_password: str) -> None:
+def seed_database(
+    session: Session,
+    clerk_password: str,
+    finance_password: str,
+    karigar_password: str | None = None,
+) -> None:
     if session.scalar(select(User.id).limit(1)) is not None:
         raise RuntimeError("Database already contains data. Use --reset in development.")
 
@@ -196,6 +202,14 @@ def seed_database(session: Session, clerk_password: str, finance_password: str) 
     karigars = {name: Karigar(name=name) for name in KARIGAR_WASTAGE}
     session.add_all([clerk, finance, *categories.values(), *karigars.values()])
     session.flush()
+
+    if karigar_password:
+        session.add(User(
+            username="murugesan", full_name="Murugesan S",
+            password_hash=hash_password(karigar_password),
+            role=ROLE_KARIGAR, karigar_id=karigars["Murugesan S"].id,
+        ))
+        session.flush()
 
     wastage = {}
     for karigar_name, rates in KARIGAR_WASTAGE.items():
@@ -277,6 +291,7 @@ def main(argv=None) -> None:
 
     clerk_password = os.getenv("DEMO_CLERK_PASSWORD", "").strip()
     finance_password = os.getenv("DEMO_FINANCE_PASSWORD", "").strip()
+    karigar_password = os.getenv("DEMO_KARIGAR_PASSWORD", "").strip() or None
     if not clerk_password or not finance_password:
         sys.exit("Set DEMO_CLERK_PASSWORD and DEMO_FINANCE_PASSWORD (see .env.example).")
 

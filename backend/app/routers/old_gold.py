@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from app.audit import record
 from app.idempotency import begin
 from app.db import get_session
-from app.deps import current_user, require_roles
+from app.deps import require_roles, staff_user
 from app.domain.gold_math import (
     fine_weight_mg,
     format_pct,
@@ -340,7 +340,7 @@ def list_purchases(
     bill: str | None = Query(default=None, max_length=30),
     limit: int = Query(default=100, ge=1, le=200),
     db: Session = Depends(get_session),
-    user: User = Depends(current_user),
+    user: User = Depends(staff_user),
 ):
     query = select(OldGoldPurchase).order_by(
         OldGoldPurchase.entry_date.desc(), OldGoldPurchase.id.desc()
@@ -365,7 +365,7 @@ def list_purchases(
 def get_purchase(
     og_no: str,
     db: Session = Depends(get_session),
-    user: User = Depends(current_user),
+    user: User = Depends(staff_user),
 ):
     purchase = _get(db, og_no)
     return _out(db, purchase, user.role, _void_of(db, purchase.id), show_full_pan=True)

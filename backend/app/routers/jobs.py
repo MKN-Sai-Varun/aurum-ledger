@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session, aliased
 from app.audit import record
 from app.idempotency import begin
 from app.db import get_session
-from app.deps import current_user, require_roles
+from app.deps import require_roles, staff_user
 from app.domain.gold_math import (
     fine_weight_mg,
     format_pct,
@@ -243,7 +243,7 @@ def list_jobs(
     status: Literal["OPEN", "CLOSED"] | None = None,
     karigar_id: int | None = None,
     db: Session = Depends(get_session),
-    user: User = Depends(current_user),
+    user: User = Depends(staff_user),
 ):
     query = select(Job).order_by(Job.opened_on.desc(), Job.id.desc())
     if status is not None:
@@ -257,7 +257,7 @@ def list_jobs(
 def get_job(
     job_no: str,
     db: Session = Depends(get_session),
-    user: User = Depends(current_user),
+    user: User = Depends(staff_user),
 ):
     job = _get_job(db, job_no)
     base = _job_outs(db, [job], user.role == ROLE_FINANCE_HEAD)[0]

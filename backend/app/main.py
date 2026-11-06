@@ -10,6 +10,7 @@ from app.idempotency import Replay
 from app.bootstrap import bootstrap
 from app.routers.alerts import router as alerts_router
 from app.routers.auth import router as auth_router
+from app.routers.me import router as me_router
 from app.routers.corrections import router as corrections_router
 from app.routers.jobs import router as jobs_router
 from app.routers.karigars import router as karigars_router
@@ -85,6 +86,7 @@ app.include_router(alerts_router)
 app.include_router(stock_router)
 app.include_router(readings_router)
 app.include_router(old_gold_router)
+app.include_router(me_router)
 
 
 @app.get("/api/health")

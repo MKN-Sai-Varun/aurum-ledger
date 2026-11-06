@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.audit import record
 from app.db import get_session
-from app.deps import current_user, require_roles
+from app.deps import require_roles, staff_user
 from app.domain.gold_math import format_pct, format_weight_g
 from app.ledger import next_number, today_ist
 from app.models import (
@@ -197,7 +197,7 @@ def karigar_ledger(
     date_to: date | None = Query(default=None, alias="to"),
     limit: int = Query(default=200, ge=1, le=MAX_LEDGER_ROWS),
     db: Session = Depends(get_session),
-    _user: User = Depends(current_user),
+    _user: User = Depends(staff_user),
 ):
     karigar = db.get(Karigar, karigar_id)
     if karigar is None:

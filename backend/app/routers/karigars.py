@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.audit import record
 from app.db import get_session
-from app.deps import current_user, require_roles
+from app.deps import require_roles, staff_user
 from app.domain.gold_math import format_pct, parse_wastage_pct
 from app.models import (
     ROLE_FINANCE_HEAD,
@@ -138,7 +138,7 @@ def _open_job_count(db: Session, karigar_id: int) -> int:
 
 @router.get("/categories", response_model=list[CategoryOut])
 def list_categories(
-    db: Session = Depends(get_session), _user: User = Depends(current_user)
+    db: Session = Depends(get_session), _user: User = Depends(staff_user)
 ):
     return [
         CategoryOut(id=c.id, name=c.name)
@@ -148,7 +148,7 @@ def list_categories(
 
 @router.get("/karigars", response_model=list[KarigarOut])
 def list_karigars(
-    db: Session = Depends(get_session), _user: User = Depends(current_user)
+    db: Session = Depends(get_session), _user: User = Depends(staff_user)
 ):
     karigars = db.scalars(select(Karigar).order_by(Karigar.name)).all()
     return _build(db, list(karigars))
@@ -158,7 +158,7 @@ def list_karigars(
 def get_karigar(
     karigar_id: int,
     db: Session = Depends(get_session),
-    _user: User = Depends(current_user),
+    _user: User = Depends(staff_user),
 ):
     return _build(db, [_get_karigar(db, karigar_id)])[0]
 

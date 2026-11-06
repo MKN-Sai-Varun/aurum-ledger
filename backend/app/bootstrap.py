@@ -25,4 +25,7 @@ def bootstrap(engine=_engine, session_factory=_SessionLocal) -> None:
     Base.metadata.create_all(engine)
     with session_factory() as session:
         if session.scalar(select(User.id).limit(1)) is None:
-            seed_database(session, clerk, finance)
+            seed_database(
+                session, clerk, finance,
+                os.getenv("DEMO_KARIGAR_PASSWORD", "").strip() or None,
+            )

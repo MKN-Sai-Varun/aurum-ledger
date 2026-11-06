@@ -12,10 +12,14 @@ def fresh():
     return engine, sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 
 
-def enable(monkeypatch):
+def enable(monkeypatch, karigar=None):
     monkeypatch.setenv("AUTO_SEED", "true")
     monkeypatch.setenv("DEMO_CLERK_PASSWORD", "clerk-demo-pass-1")
     monkeypatch.setenv("DEMO_FINANCE_PASSWORD", "finance-demo-pass-1")
+    if karigar:
+        monkeypatch.setenv("DEMO_KARIGAR_PASSWORD", karigar)
+    else:
+        monkeypatch.delenv("DEMO_KARIGAR_PASSWORD", raising=False)
 
 
 def users(maker):
@@ -52,3 +56,9 @@ def test_refuses_to_start_without_demo_passwords(monkeypatch):
     engine, maker = fresh()
     with pytest.raises(RuntimeError):
         bootstrap(engine, maker)
+
+def test_seeds_the_karigar_login_when_a_password_is_given(monkeypatch):
+    enable(monkeypatch, karigar="karigar-demo-pass-1")
+    engine, maker = fresh()
+    bootstrap(engine, maker)
+    assert users(maker) == 3

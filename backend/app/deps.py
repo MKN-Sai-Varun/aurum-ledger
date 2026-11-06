@@ -2,8 +2,9 @@
 from fastapi import Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
+
 from app.db import get_session, settings
-from app.models import User
+from app.models import ROLE_FINANCE_HEAD, ROLE_ISSUE_CLERK, User
 from app.security import decode_access_token
 
 COOKIE_NAME = "aurum_session"
@@ -35,3 +36,5 @@ def require_roles(*roles: str):
         return user
 
     return checker
+
+staff_user = require_roles(ROLE_ISSUE_CLERK, ROLE_FINANCE_HEAD)

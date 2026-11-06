@@ -25,6 +25,7 @@ from app.db import Base
 
 ROLE_ISSUE_CLERK = "issue_clerk"
 ROLE_FINANCE_HEAD = "finance_head"
+ROLE_KARIGAR = "karigar"
 
 KIND_ISSUE = "ISSUE"
 KIND_RECEIPT_PIECE = "RECEIPT_PIECE"
@@ -43,7 +44,12 @@ def _utcnow() -> datetime:
 class User(Base):
     __tablename__ = "users"
     __table_args__ = (
-        CheckConstraint("role IN ('issue_clerk', 'finance_head')", name="ck_users_role"),
+        CheckConstraint(
+            "role IN ('issue_clerk', 'finance_head', 'karigar')", name="ck_users_role"
+        ),
+        CheckConstraint(
+            "(role = 'karigar') = (karigar_id IS NOT NULL)", name="ck_users_karigar_link"
+        ),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -52,6 +58,9 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255))
     role: Mapped[str] = mapped_column(String(20))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    karigar_id: Mapped[int | None] = mapped_column(
+        ForeignKey("karigars.id"), nullable=True, unique=True
+    )
 
 
 class ItemCategory(Base):

@@ -11,7 +11,7 @@ from app.seed import seed_database
 
 CLERK_PW = "clerk-demo-pass-1"
 FINANCE_PW = "finance-demo-pass-1"
-
+KARIGAR_PW = "karigar-demo-pass-1"
 
 @pytest.fixture()
 def engine():
@@ -29,7 +29,7 @@ def engine():
 
     Base.metadata.create_all(engine)
     with Session(engine) as session:
-        seed_database(session, CLERK_PW, FINANCE_PW)
+        seed_database(session, CLERK_PW, FINANCE_PW, KARIGAR_PW)
     yield engine
     engine.dispose()
 

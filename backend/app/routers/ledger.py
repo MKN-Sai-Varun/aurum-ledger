@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.audit import record
 from app.db import get_session
 from app.idempotency import begin
-from app.deps import current_user, require_roles
+from app.deps import require_roles, staff_user
 from app.readings_check import ReadingFields, apply_readings, check_readings
 from app.domain.gold_math import (
     allowed_wastage_mg,
@@ -232,7 +232,7 @@ def create_issue(
 def get_issue(
     txn_no: str,
     db: Session = Depends(get_session),
-    _user: User = Depends(current_user),
+    _user: User = Depends(staff_user),
 ):
     entry = db.scalar(
         select(LedgerEntry).where(
@@ -249,7 +249,7 @@ def get_balance(
     karigar_id: int,
     as_of: date | None = None,
     db: Session = Depends(get_session),
-    _user: User = Depends(current_user),
+    _user: User = Depends(staff_user),
 ):
     karigar = db.get(Karigar, karigar_id)
     if karigar is None:
