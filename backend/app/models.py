@@ -290,6 +290,20 @@ class OldGoldVoid(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_utcnow
     )
+class JobFollowUp(Base):
+    """A logged follow-up on an open job. Append-only. Nothing is sent to anyone."""
+
+    __tablename__ = "job_follow_ups"
+    __table_args__ = (Index("ix_followup_job", "job_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    job_id: Mapped[int] = mapped_column(ForeignKey("jobs.id"))
+    note: Mapped[str] = mapped_column(String(200))
+    followed_up_on: Mapped[date] = mapped_column(Date)
+    created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow
+    )
 
 def _make_append_only(table) -> None:
     """Reject UPDATE and DELETE on a table (SQLite triggers)."""
@@ -331,3 +345,4 @@ _make_append_only(StockEntry.__table__)
 _make_append_only(OldGoldPurchase.__table__)
 _make_append_only(OldGoldVoid.__table__)
 _make_append_only(IdempotencyKey.__table__)
+_make_append_only(JobFollowUp.__table__)

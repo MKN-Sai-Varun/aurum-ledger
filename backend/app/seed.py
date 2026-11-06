@@ -45,6 +45,7 @@ from app.models import (
     PAY_CASH,
     OldGoldPurchase,
     ROLE_KARIGAR,
+    JobFollowUp,
 )
 from app.security import hash_password
 
@@ -261,6 +262,12 @@ def seed_database(
                        note="Part returned from refining (sample figure)", created_by=finance.id),
         ]
     )
+    session.add(JobFollowUp(
+        job_id=jobs["JOB-1043"].id,
+        note="Asked for an update, expected back next week",
+        followed_up_on=date(2026, 11, 4),
+        created_by=finance.id,
+    ))
     for (og_no, bill, day, customer, gross_text, deduction_text,purity_text, rate_text, mode, pan) in OLD_GOLD:
         gross_mg = parse_weight_g(gross_text)
         deduction_mg = parse_weight_g(deduction_text)
