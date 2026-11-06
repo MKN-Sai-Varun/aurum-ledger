@@ -11,8 +11,9 @@ import Stock from "./pages/Stock";
 import OldGold from "./pages/OldGold";
 import Login from "./pages/Login";
 import MyAccount from "./pages/MyAccount";
+import Aging from "./pages/Aging";
 
-const KNOWN_ROUTES = ["/karigars", "/jobs", "/ledger", "/oldgold", "/issue", "/alerts", "/stock"];
+const KNOWN_ROUTES = ["/karigars", "/jobs", "/ledger", "/oldgold", "/issue", "/alerts", "/stock","/aging"];
 
 function Notice({ text }: { text: string }) {
   return (
@@ -69,6 +70,8 @@ function Screen() {
       {route === "/jobs" && <Jobs />}
       {route === "/ledger" && <Ledger />}
       {route === "/oldgold" && <OldGold />}
+      {route === "/aging" && (isFinance ? <Aging /> : <Notice text="Only the finance head can see aging." />)}
+
       {route === "/alerts" &&
         (isFinance ? <Alerts /> : <Notice text="Only the finance head can see alerts." />)}
       {route === "/stock" &&

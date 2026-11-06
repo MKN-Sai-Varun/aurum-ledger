@@ -1418,3 +1418,42 @@ select.input {
   font-weight: 500;
   line-height: 1.4;
 }
+
+.tabs-wrap {
+  flex-wrap: wrap;
+}
+
+.aging-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 16px;
+  margin-bottom: 12px;
+}
+
+.aging-toolbar .field {
+  flex: 1 1 200px;
+  max-width: 280px;
+  margin: 0;
+}
+
+.aging-toolbar .toolbar-count {
+  margin-left: auto;
+}
+
+.table-aging {
+  min-width: 900px;
+}
+
+.table-aging td {
+  vertical-align: middle;
+}
+
+.table-aging .cell-note {
+  max-width: 260px;
+}
+
+.table-aging th.col-action,
+.table-aging td.col-action {
+  text-align: right;
+}

@@ -49,6 +49,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               {link("/oldgold", "Old gold")}
               {user.role === "finance_head" && link("/alerts", "Alerts")}
               {user.role === "finance_head" && link("/stock", "Stock")}
+              {user.role === "finance_head" && link("/aging", "Aging")}
               {user.role === "issue_clerk" && link("/issue", "Issue")}
             </nav>
           )}

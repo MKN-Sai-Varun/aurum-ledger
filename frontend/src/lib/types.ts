@@ -230,3 +230,35 @@ export interface MySummary {
   entries: MyEntry[];
   truncated: boolean;
 }
+
+export interface AgingJob {
+  job_no: string;
+  karigar_id: number;
+  karigar: string;
+  category: string;
+  opened_on: string;
+  age_days: number;
+  issued_fine_g: string;
+  outstanding_g: string;
+  last_activity: string | null;
+  days_since_activity: number | null;
+  followups: number;
+  last_followup_on: string | null;
+  last_followup_note: string | null;
+  last_followup_by: string | null;
+}
+
+export interface AgingBucket {
+  key: string;
+  label: string;
+  count: number;
+  outstanding_g: string;
+  jobs: AgingJob[];
+}
+
+export interface AgingData {
+  as_of: string;
+  total_open: number;
+  total_outstanding_g: string;
+  buckets: AgingBucket[];
+}
