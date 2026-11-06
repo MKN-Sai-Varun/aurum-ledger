@@ -1343,3 +1343,78 @@ select.input {
   justify-content: space-between;
   gap: 8px 12px;
 }
+.stack {
+  display: grid;
+  gap: 12px;
+}
+
+.my-page {
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.my-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.my-title {
+  font-size: clamp(28px, 7vw, 40px);
+  margin: 0;
+}
+
+.my-head .tabs {
+  margin-bottom: 0;
+}
+
+.my-balance {
+  text-align: center;
+  background: var(--emerald-soft);
+  border-color: transparent;
+  padding: 24px 18px;
+}
+
+.my-label {
+  margin: 4px 0 0;
+  font-weight: 500;
+}
+
+.my-number {
+  margin: 4px 0;
+  font-size: clamp(52px, 18vw, 88px);
+  font-weight: 500;
+  line-height: 1.05;
+}
+
+.my-open {
+  margin: 12px 0 0;
+}
+
+.my-heading {
+  margin: 20px 0 0;
+  font-size: 22px;
+}
+
+.my-item,
+.my-kind {
+  margin: 2px 0 0;
+  font-size: 19px;
+  font-weight: 500;
+}
+
+.tamil {
+  font-family: "Noto Sans Tamil", var(--font-ui);
+  line-height: 1.7;
+}
+
+.tamil h1,
+.tamil h2,
+.tamil h3 {
+  font-family: "Noto Sans Tamil", var(--font-ui);
+  font-weight: 500;
+  line-height: 1.4;
+}

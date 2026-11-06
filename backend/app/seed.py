@@ -301,10 +301,10 @@ def main(argv=None) -> None:
 
     with SessionLocal() as session:
         try:
-            seed_database(session, clerk_password, finance_password)
+            seed_database(session, clerk_password, finance_password, karigar_password)
         except (RuntimeError, ValueError) as error:
             sys.exit(str(error))
-    print("Seeded demo data. Users: clerk, finance.")
+        print("Seeded demo data. Users: clerk, finance" + (", murugesan." if karigar_password else "."))
 
 
 if __name__ == "__main__":

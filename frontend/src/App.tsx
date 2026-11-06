@@ -10,6 +10,7 @@ import Alerts from "./pages/Alerts";
 import Stock from "./pages/Stock";
 import OldGold from "./pages/OldGold";
 import Login from "./pages/Login";
+import MyAccount from "./pages/MyAccount";
 
 const KNOWN_ROUTES = ["/karigars", "/jobs", "/ledger", "/oldgold", "/issue", "/alerts", "/stock"];
 
@@ -51,6 +52,13 @@ function Screen() {
   }
 
   if (state.status === "anonymous") return <Login />;
+  if (state.user.role === "karigar") {
+    return (
+      <Layout>
+        <MyAccount />
+      </Layout>
+    );
+  }
 
   const isClerk = state.user.role === "issue_clerk";
   const isFinance = state.user.role === "finance_head";

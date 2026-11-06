@@ -1,4 +1,4 @@
-export type Role = "issue_clerk" | "finance_head";
+export type Role = "issue_clerk" | "finance_head" | "karigar";
 
 export interface User {
   id: number;
@@ -24,6 +24,7 @@ export interface Karigar {
 export const ROLE_LABEL: Record<Role, string> = {
   issue_clerk: "Issue clerk",
   finance_head: "Finance head",
+  karigar: "Karigar",
 };
 export interface Category {
   id: number;
@@ -207,4 +208,25 @@ export interface OldGold {
   recorded_by: string;
   voided: boolean;
   void_reason: string | null;
+}
+export interface MyEntry {
+  txn_no: string;
+  entry_date: string;
+  kind: string;
+  job_no: string;
+  category: string;
+  gross_weight_g: string;
+  purity_pct: string;
+  fine_weight_g: string;
+  change_g: string;
+  huid: string | null;
+}
+
+export interface MySummary {
+  karigar: string;
+  balance_g: string;
+  open_jobs: number;
+  jobs: Job[];
+  entries: MyEntry[];
+  truncated: boolean;
 }

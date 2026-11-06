@@ -2,9 +2,9 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import { useAuth } from "../auth/auth-context";
 import { ApiError } from "../lib/api";
+import { clearAllDrafts } from "../lib/drafts";
 import { ROLE_LABEL } from "../lib/types";
 import { useRoute } from "../lib/useRoute";
-import { clearAllDrafts } from "../lib/drafts";
 import OnlineBanner from "./OnlineBanner";
 
 export default function Layout({ children }: { children: ReactNode }) {
@@ -14,6 +14,7 @@ export default function Layout({ children }: { children: ReactNode }) {
 
   if (state.status !== "signed-in") return null;
   const { user } = state;
+  const isStaff = user.role !== "karigar";
 
   async function handleSignOut() {
     setError(null);
@@ -40,15 +41,17 @@ export default function Layout({ children }: { children: ReactNode }) {
       <header className="topbar">
         <div className="topbar-inner">
           <span className="brand">Aurum</span>
-          <nav className="nav" aria-label="Main">
-            {link("/karigars", "Karigars")}
-            {link("/jobs", "Jobs")}
-            {link("/ledger", "Ledger")}
-            {link("/oldgold", "Old gold")}
-            {user.role === "finance_head" && link("/alerts", "Alerts")}
-            {user.role === "finance_head" && link("/stock", "Stock")}
-            {user.role === "issue_clerk" && link("/issue", "Issue")}
-          </nav>
+          {isStaff && (
+            <nav className="nav" aria-label="Main">
+              {link("/karigars", "Karigars")}
+              {link("/jobs", "Jobs")}
+              {link("/ledger", "Ledger")}
+              {link("/oldgold", "Old gold")}
+              {user.role === "finance_head" && link("/alerts", "Alerts")}
+              {user.role === "finance_head" && link("/stock", "Stock")}
+              {user.role === "issue_clerk" && link("/issue", "Issue")}
+            </nav>
+          )}
           <div className="topbar-right">
             <span className="user">{user.full_name}</span>
             <span className="chip chip-ok">{ROLE_LABEL[user.role]}</span>

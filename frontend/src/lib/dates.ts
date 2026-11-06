@@ -21,3 +21,13 @@ export function showDate(iso: string): string {
 export function showTime(ms: number): string {
   return new Date(ms).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
 }
+
+/** A date in the chosen language, for example "27 Oct 2026". */
+export function showDateIn(iso: string, lang: "ta" | "en"): string {
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString(lang === "ta" ? "ta-IN" : "en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
