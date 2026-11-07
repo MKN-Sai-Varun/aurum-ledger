@@ -262,3 +262,46 @@ export interface AgingData {
   total_outstanding_g: string;
   buckets: AgingBucket[];
 }
+
+export interface Figures {
+  total_g: string;
+  vault_g: string;
+  karigars_g: string;
+  refiner_g: string;
+}
+
+export interface Movement {
+  key: string;
+  label: string;
+  count: number;
+  effect_g: string;
+}
+
+export interface DayClosed {
+  expected_vault_g: string;
+  counted_vault_g: string;
+  difference_g: string;
+  note: string | null;
+  by: string;
+  at: string;
+  changed_since_close: boolean;
+}
+
+export interface DayView {
+  date: string;
+  opening: Figures;
+  movements: Movement[];
+  closing: Figures;
+  reconciles: boolean;
+  consistent: boolean;
+  closed: DayClosed | null;
+}
+
+export interface CloseRow {
+  close_date: string;
+  expected_vault_g: string;
+  counted_vault_g: string;
+  difference_g: string;
+  note: string | null;
+  by: string;
+}

@@ -1457,3 +1457,15 @@ select.input {
 .table-aging td.col-action {
   text-align: right;
 }
+
+.row-zero td {
+  color: var(--ink-soft);
+}
+
+.check-line {
+  margin: 12px 0 0;
+}
+
+.closed-card .section-heading {
+  margin-top: 0;
+}

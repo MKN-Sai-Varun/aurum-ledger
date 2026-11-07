@@ -12,8 +12,9 @@ import OldGold from "./pages/OldGold";
 import Login from "./pages/Login";
 import MyAccount from "./pages/MyAccount";
 import Aging from "./pages/Aging";
+import Closing from "./pages/Closing";
 
-const KNOWN_ROUTES = ["/karigars", "/jobs", "/ledger", "/oldgold", "/issue", "/alerts", "/stock","/aging"];
+const KNOWN_ROUTES = ["/karigars", "/jobs", "/ledger", "/oldgold", "/issue", "/alerts", "/stock","/aging","/closing"];
 
 function Notice({ text }: { text: string }) {
   return (
@@ -70,7 +71,10 @@ function Screen() {
       {route === "/jobs" && <Jobs />}
       {route === "/ledger" && <Ledger />}
       {route === "/oldgold" && <OldGold />}
-      {route === "/aging" && (isFinance ? <Aging /> : <Notice text="Only the finance head can see aging." />)}
+      {route === "/aging" && 
+        (isFinance ? <Aging /> : <Notice text="Only the finance head can see aging." />)}
+      {route === "/closing" &&
+        (isFinance ? <Closing /> : <Notice text="Only the finance head can close the day." />)}
 
       {route === "/alerts" &&
         (isFinance ? <Alerts /> : <Notice text="Only the finance head can see alerts." />)}
@@ -78,6 +82,7 @@ function Screen() {
         (isFinance ? <Stock /> : <Notice text="Only the finance head can see stock." />)}
       {route === "/issue" &&
         (isClerk ? <Issue /> : <Notice text="Only the issue clerk can record issues." />)}
+
       {!KNOWN_ROUTES.includes(route) && <Notice text="That page doesn't exist." />}
     </Layout>
   );

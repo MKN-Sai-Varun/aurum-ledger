@@ -305,6 +305,32 @@ class JobFollowUp(Base):
         DateTime(timezone=True), default=_utcnow
     )
 
+class DayClose(Base):
+    """A closed day: the figures at the time and the counted vault. Append-only."""
+
+    __tablename__ = "day_closes"
+    __table_args__ = (
+        CheckConstraint("counted_vault_mg >= 0", name="ck_close_counted"),
+        CheckConstraint(
+            "difference_mg = counted_vault_mg - expected_vault_mg", name="ck_close_difference"
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    close_date: Mapped[date] = mapped_column(Date, unique=True)
+    opening_vault_mg: Mapped[int] = mapped_column(Integer)
+    expected_vault_mg: Mapped[int] = mapped_column(Integer)
+    counted_vault_mg: Mapped[int] = mapped_column(Integer)
+    difference_mg: Mapped[int] = mapped_column(Integer)
+    total_mg: Mapped[int] = mapped_column(Integer)
+    karigars_mg: Mapped[int] = mapped_column(Integer)
+    refiner_mg: Mapped[int] = mapped_column(Integer)
+    note: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    closed_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow
+    )
+
 def _make_append_only(table) -> None:
     """Reject UPDATE and DELETE on a table (SQLite triggers)."""
     for operation in ("UPDATE", "DELETE"):
@@ -346,3 +372,4 @@ _make_append_only(OldGoldPurchase.__table__)
 _make_append_only(OldGoldVoid.__table__)
 _make_append_only(IdempotencyKey.__table__)
 _make_append_only(JobFollowUp.__table__)
+_make_append_only(DayClose.__table__)

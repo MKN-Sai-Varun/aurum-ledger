@@ -46,6 +46,7 @@ from app.models import (
     OldGoldPurchase,
     ROLE_KARIGAR,
     JobFollowUp,
+    DayClose
 )
 from app.security import hash_password
 
@@ -262,6 +263,18 @@ def seed_database(
                        note="Part returned from refining (sample figure)", created_by=finance.id),
         ]
     )
+    # The figures below follow from the data above: on 1 Nov the vault held
+    # 2206.027 g, and on 2 Nov, after the old gold bought that day, 2252.514 g.
+    session.add_all([
+        DayClose(close_date=date(2026, 11, 1), opening_vault_mg=2_196_867,
+                 expected_vault_mg=2_206_027, counted_vault_mg=2_206_027, difference_mg=0,
+                 total_mg=2_526_935, karigars_mg=210_908, refiner_mg=110_000,
+                 note=None, closed_by=finance.id),
+        DayClose(close_date=date(2026, 11, 2), opening_vault_mg=2_206_027,
+                 expected_vault_mg=2_252_514, counted_vault_mg=2_252_509, difference_mg=-5,
+                 total_mg=2_573_422, karigars_mg=210_908, refiner_mg=110_000,
+                 note="Small weighing difference on the vault scale", closed_by=finance.id),
+    ])
     session.add(JobFollowUp(
         job_id=jobs["JOB-1043"].id,
         note="Asked for an update, expected back next week",

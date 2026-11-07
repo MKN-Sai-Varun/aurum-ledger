@@ -19,6 +19,7 @@ from app.routers.readings import router as readings_router
 from app.routers.stock import router as stock_router
 from app.routers.old_gold import router as old_gold_router
 from app.routers.aging import router as aging_router
+from app.routers.closing import router as closing_router
 from app.db import settings
 
 # The built frontend, present only inside the container image.
@@ -89,6 +90,7 @@ app.include_router(readings_router)
 app.include_router(old_gold_router)
 app.include_router(me_router)
 app.include_router(aging_router)
+app.include_router(closing_router)
 
 
 @app.get("/api/health")

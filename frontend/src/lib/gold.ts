@@ -46,3 +46,9 @@ export function formatG(mg: number): string {
 export function formatPctH(hundredths: number): string {
   return `${Math.floor(hundredths / 100)}.${String(hundredths % 100).padStart(2, "0")}`;
 }
+
+/** Milligrams as signed grams: "+0.086", "-0.514" or "0.000". */
+export function formatSignedG(mg: number): string {
+  const text = formatG(Math.abs(mg));
+  return mg > 0 ? `+${text}` : mg < 0 ? `-${text}` : text;
+}
