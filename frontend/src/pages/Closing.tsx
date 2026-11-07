@@ -77,20 +77,23 @@ export default function Closing() {
   useEffect(() => {
     if (!dayOk) return;
     let cancelled = false;
-    setView({ status: "loading" });
-    api
-      .get<DayView>(`/api/closing/day?date=${day}`)
-      .then((data) => {
+    
+    async function fetchView() {
+      try {
+        setView({ status: "loading" });
+        const data = await api.get<DayView>(`/api/closing/day?date=${day}`);
         if (!cancelled) setView({ status: "ready", view: data });
-      })
-      .catch((e) => {
+      } catch (e) {
         if (!cancelled) {
           setView({
             status: "error",
             message: e instanceof ApiError ? e.message : "Something went wrong.",
           });
         }
-      });
+      }
+    }
+    
+    fetchView();
     return () => {
       cancelled = true;
     };

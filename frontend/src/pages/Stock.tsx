@@ -22,22 +22,26 @@ export default function Stock() {
   useEffect(() => {
     if (!dateOk) return;
     let cancelled = false;
-    setLoad({ status: "loading" });
-    Promise.all([
-      api.get<Statement>(`/api/stock/statement?as_of=${asOf}`),
-      api.get<StockMove[]>("/api/stock/entries"),
-    ])
-      .then(([statement, moves]) => {
+    
+    async function fetchData() {
+      try {
+        setLoad({ status: "loading" });
+        const [statement, moves] = await Promise.all([
+          api.get<Statement>(`/api/stock/statement?as_of=${asOf}`),
+          api.get<StockMove[]>("/api/stock/entries"),
+        ]);
         if (!cancelled) setLoad({ status: "ready", statement, moves });
-      })
-      .catch((e) => {
+      } catch (e) {
         if (!cancelled) {
           setLoad({
             status: "error",
             message: e instanceof ApiError ? e.message : "Something went wrong.",
           });
         }
-      });
+      }
+    }
+    
+    fetchData();
     return () => {
       cancelled = true;
     };

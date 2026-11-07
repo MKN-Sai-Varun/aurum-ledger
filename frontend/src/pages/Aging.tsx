@@ -35,7 +35,7 @@ function ago(days: number | null): string {
 
 function compare(sort: Sort) {
   return (a: Row, b: Row): number => {
-    let result = 0;
+    let result: number;
     if (sort === "age") result = b.age_days - a.age_days;
     else if (sort === "outstanding") {
       result = (parseWeightMg(b.outstanding_g) ?? 0) - (parseWeightMg(a.outstanding_g) ?? 0);

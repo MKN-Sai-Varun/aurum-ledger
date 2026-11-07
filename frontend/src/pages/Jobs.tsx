@@ -82,7 +82,7 @@ export default function Jobs() {
     }
   }
 
-  const rows = load.status === "ready" ? load.rows : [];
+  const rows = useMemo(() => load.status === "ready" ? load.rows : [], [load]);
   const openCount = rows.filter((j) => j.status === "OPEN").length;
   const closedCount = rows.length - openCount;
   const reviewCount = rows.filter((j) => j.review === true).length;

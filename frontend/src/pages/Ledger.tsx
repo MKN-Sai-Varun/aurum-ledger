@@ -57,24 +57,28 @@ export default function Ledger() {
   useEffect(() => {
     if (karigarId === "" || rangeBad) return;
     let cancelled = false;
-    const params = new URLSearchParams();
-    if (from) params.set("from", from);
-    if (to) params.set("to", to);
-    const query = params.toString();
-    setLedger({ status: "loading" });
-    api
-      .get<LedgerData>(`/api/karigars/${karigarId}/ledger${query ? `?${query}` : ""}`)
-      .then((data) => {
+    
+    async function fetchLedger() {
+      const params = new URLSearchParams();
+      if (from) params.set("from", from);
+      if (to) params.set("to", to);
+      const query = params.toString();
+      
+      try {
+        setLedger({ status: "loading" });
+        const data = await api.get<LedgerData>(`/api/karigars/${karigarId}/ledger${query ? `?${query}` : ""}`);
         if (!cancelled) setLedger({ status: "ready", data });
-      })
-      .catch((e) => {
+      } catch (e) {
         if (!cancelled) {
           setLedger({
             status: "error",
             message: e instanceof ApiError ? e.message : "Something went wrong.",
           });
         }
-      });
+      }
+    }
+    
+    fetchLedger();
     return () => {
       cancelled = true;
     };

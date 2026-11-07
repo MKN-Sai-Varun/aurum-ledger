@@ -51,7 +51,7 @@ export default function OldGoldList({
     );
   }
 
-  const rows = load.status === "ready" ? load.rows : [];
+  const rows = useMemo(() => load.status === "ready" ? load.rows : [], [load]);
   const reviewCount = rows.filter((r) => r.needs_review === true).length;
 
   const visible = useMemo(() => {

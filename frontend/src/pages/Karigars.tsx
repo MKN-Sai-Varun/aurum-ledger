@@ -86,7 +86,7 @@ export default function Karigars() {
     );
   }
 
-  const rows = load.status === "ready" ? load.rows : [];
+  const rows = useMemo(() => load.status === "ready" ? load.rows : [], [load]);
   const categories = load.status === "ready" ? load.categories : [];
   const activeCount = rows.filter((k) => k.is_active).length;
   const openJobs = rows.reduce((sum, k) => sum + k.open_jobs, 0);

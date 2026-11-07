@@ -50,7 +50,7 @@ async function request<T>(
 
   if (response.status === 204) return undefined as T;
 
-  let data: unknown = null;
+  let data: unknown;
   try {
     data = await response.json();
   } catch {
